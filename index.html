@@ -1,0 +1,1298 @@
+<div id="root"></div>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&display=swap');
+
+  :root{
+    --ink:#0B0710; --surface:#141019; --surface-2:#1C1626; --line:#2B2336;
+    --magenta:#FF3DAE; --violet:#7A4DFF; --blue:#2BD4FF; --gold:#FFC24B; --teal:#3FE0C0;
+    --txt:#F5F0FA; --muted:#9A8FB0; --ok:#3FE0A0; --warn:#FF6B6B;
+    --display:'Anton','Inter',system-ui,sans-serif; --body:'Inter',system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  body,#root{background:transparent;}
+
+  .stage{ min-height:100vh;width:100%;display:flex;flex-direction:column;align-items:center;gap:16px;
+    padding:24px 12px 48px;font-family:var(--body);color:var(--txt);
+    background:radial-gradient(900px 600px at 18% -5%,rgba(255,61,174,.20),transparent 60%),
+      radial-gradient(900px 700px at 95% 8%,rgba(43,212,255,.15),transparent 55%),
+      radial-gradient(700px 600px at 50% 110%,rgba(122,77,255,.18),transparent 55%),#050308; }
+
+  .roleswitch{ display:inline-flex;background:rgba(20,16,25,.8);border:1px solid var(--line);border-radius:999px;padding:4px;gap:4px;backdrop-filter:blur(8px);}
+  .roleswitch button{ font-weight:600;font-size:12.5px;color:var(--muted);background:transparent;border:0;cursor:pointer;padding:8px 16px;border-radius:999px;transition:.2s;font-family:var(--body);}
+  .roleswitch button.on{ color:#0B0710;background:linear-gradient(120deg,var(--magenta),var(--violet)); }
+  .hint{ font-size:12px;color:var(--muted);max-width:340px;text-align:center;line-height:1.5; }
+  .hint b{ color:var(--magenta); }
+
+  .phone{ width:390px;max-width:94vw;height:824px;max-height:84vh;background:#000;border-radius:52px;padding:12px;flex:none;
+    box-shadow:0 0 0 2px #2a2336,0 30px 80px -20px rgba(255,61,174,.35),0 40px 120px -30px rgba(43,212,255,.3);position:relative;}
+  .screen{ position:relative;width:100%;height:100%;background:var(--ink);border-radius:42px;overflow:hidden;display:flex;flex-direction:column;}
+  .notch{ position:absolute;top:0;left:50%;transform:translateX(-50%);width:128px;height:26px;background:#000;border-radius:0 0 16px 16px;z-index:60;}
+  .statusbar{ height:44px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:13px;font-weight:600;z-index:40;}
+  .statusbar .dots{ display:flex;gap:5px;align-items:center;opacity:.9;}
+
+  .body{ flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;}
+  .body::-webkit-scrollbar{ width:0;}
+  .pad{ padding:8px 20px 28px;}
+
+  .eyebrow{ font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--magenta);font-weight:700;}
+  .h1{ font-family:var(--display);font-size:32px;line-height:.96;letter-spacing:.01em;text-transform:uppercase;}
+  .h2{ font-family:var(--display);font-size:22px;letter-spacing:.02em;text-transform:uppercase;}
+  .sub{ color:var(--muted);font-size:14px;line-height:1.5;}
+  .logo{ font-family:var(--display);text-transform:uppercase;letter-spacing:.01em;
+    background:linear-gradient(110deg,var(--magenta),var(--violet),var(--blue));-webkit-background-clip:text;background-clip:text;color:transparent;}
+
+  /* motion */
+  @media (prefers-reduced-motion: no-preference){
+    .enter{ animation:enter .34s cubic-bezier(.2,.7,.2,1) both;}
+    @keyframes enter{ from{opacity:0;transform:translateY(10px);} to{opacity:1;transform:none;}}
+    .stagger>*{ animation:rise .42s cubic-bezier(.2,.7,.2,1) both;}
+    .stagger>*:nth-child(1){animation-delay:.02s}.stagger>*:nth-child(2){animation-delay:.07s}
+    .stagger>*:nth-child(3){animation-delay:.12s}.stagger>*:nth-child(4){animation-delay:.17s}
+    .stagger>*:nth-child(5){animation-delay:.22s}.stagger>*:nth-child(6){animation-delay:.27s}
+    @keyframes rise{ from{opacity:0;transform:translateY(14px);} to{opacity:1;transform:none;}}
+    .glow{ animation:breathe 3.4s ease-in-out infinite;} @keyframes breathe{0%,100%{opacity:.55}50%{opacity:1}}
+    .floorshimmer{ animation:shimmer 6s linear infinite;} @keyframes shimmer{0%{opacity:.3}50%{opacity:.6}100%{opacity:.3}}
+    .pop{ animation:pop .26s cubic-bezier(.2,.8,.2,1.2) both;} @keyframes pop{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
+    .beam{ animation:sweep 5s ease-in-out infinite;transform-origin:top center;} @keyframes sweep{0%,100%{opacity:.25;transform:rotate(-3deg)}50%{opacity:.6;transform:rotate(3deg)}}
+    .ping{ animation:ping 1.4s ease-out infinite;} @keyframes ping{0%{transform:scale(.6);opacity:.7}100%{transform:scale(2.4);opacity:0}}
+    .splash{ animation:splashfade 1.7s ease forwards;} @keyframes splashfade{0%,55%{opacity:1}100%{opacity:0;visibility:hidden}}
+    .splash .logo{ animation:logoin 1.1s cubic-bezier(.2,.8,.2,1) both;} @keyframes logoin{0%{opacity:0;transform:translateY(20px) scale(.9);letter-spacing:.3em}100%{opacity:1;transform:none;letter-spacing:.01em}}
+  }
+  .splash{ position:absolute;inset:0;z-index:80;background:radial-gradient(600px 400px at 50% 40%,rgba(122,77,255,.35),#050308 70%);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;}
+
+  /* venue cover + cards */
+  .cards{ display:flex;flex-direction:column;gap:16px;margin-top:16px;}
+  .card{ position:relative;border-radius:22px;overflow:hidden;border:1px solid var(--line);cursor:pointer;transition:transform .18s;}
+  .card:active{ transform:scale(.985);}
+  .cover{ height:150px;position:relative;overflow:hidden;}
+  .cover svg{ position:absolute;inset:0;width:100%;height:100%;}
+  .meta{ padding:14px 16px 16px;background:var(--surface);}
+  .row{ display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .genre{ position:absolute;top:12px;left:12px;font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:6px 10px;border-radius:999px;background:rgba(11,7,16,.5);backdrop-filter:blur(6px);z-index:2;}
+  .when{ position:absolute;top:12px;right:12px;font-size:12px;font-weight:600;padding:6px 10px;border-radius:999px;background:rgba(11,7,16,.5);backdrop-filter:blur(6px);z-index:2;}
+  .covtag{ position:absolute;bottom:12px;left:14px;z-index:2;}
+  .covtag .nm{ font-family:var(--display);font-size:26px;text-transform:uppercase;text-shadow:0 2px 18px rgba(0,0,0,.5);}
+  .covtag .ar{ font-size:12px;font-weight:600;opacity:.9;display:flex;align-items:center;gap:5px;}
+  .pricefrom{ font-size:13px;color:var(--muted);} .pricefrom b{ color:var(--txt);font-weight:700;}
+  .pill{ font-size:11px;font-weight:700;padding:5px 10px;border-radius:999px;}
+
+  /* chips / filters */
+  .chips{ display:flex;gap:8px;overflow-x:auto;padding:14px 0 4px;-ms-overflow-style:none;scrollbar-width:none;}
+  .chips::-webkit-scrollbar{display:none;}
+  .chip{ flex:none;font-size:13px;font-weight:600;padding:9px 15px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer;transition:.18s;white-space:nowrap;}
+  .chip.on{ color:#0B0710;background:linear-gradient(120deg,var(--magenta),var(--violet));border-color:transparent;}
+  .locbtn{ display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--blue);background:rgba(43,212,255,.08);border:1px solid rgba(43,212,255,.3);border-radius:12px;padding:11px 14px;cursor:pointer;margin-top:12px;width:100%;justify-content:center;}
+  .locbtn.on{ color:var(--ok);background:rgba(63,224,160,.08);border-color:rgba(63,224,160,.3);}
+
+  /* buttons / forms */
+  .btn{ display:flex;align-items:center;justify-content:center;gap:8px;width:100%;font-family:var(--body);font-weight:700;font-size:16px;color:#0B0710;border:0;border-radius:16px;padding:17px;cursor:pointer;
+    background:linear-gradient(120deg,var(--magenta),var(--violet));box-shadow:0 10px 30px -8px rgba(255,61,174,.55);transition:transform .15s,opacity .15s;}
+  .btn:active{ transform:scale(.98);}
+  .btn[disabled]{ opacity:.35;box-shadow:none;cursor:not-allowed;}
+  .btn.ghost{ background:transparent;color:var(--txt);border:1px solid var(--line);box-shadow:none;}
+  .btn.gold{ background:linear-gradient(120deg,var(--gold),#ff9d4b);box-shadow:0 10px 30px -8px rgba(255,194,75,.5);}
+  .btn.sm{ padding:12px;font-size:14px;}
+  .field{ margin-top:14px;} .field label{ display:block;font-size:12px;color:var(--muted);margin-bottom:7px;font-weight:600;}
+  .input,textarea.input{ width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:14px 16px;color:var(--txt);font-family:var(--body);font-size:15px;resize:none;}
+  .input::placeholder{ color:#5e5570;}
+  .seg{ display:flex;gap:8px;margin-top:14px;}
+  .seg .opt{ flex:1;border:1px solid var(--line);background:var(--surface);border-radius:16px;padding:16px 10px;text-align:center;cursor:pointer;transition:.18s;}
+  .seg .opt.on{ border-color:var(--magenta);background:rgba(255,61,174,.08);}
+  .seg .opt .t{ font-weight:700;font-size:15px;} .seg .opt .d{ font-size:11px;color:var(--muted);margin-top:3px;}
+
+  /* topbar / back */
+  .topbar{ display:flex;align-items:center;gap:14px;padding:6px 18px 4px;}
+  .back{ width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--txt);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex:none;}
+
+  /* floor map */
+  .legend{ display:flex;gap:13px;flex-wrap:wrap;margin:14px 0 6px;}
+  .legend span{ display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);}
+  .swatch{ width:11px;height:11px;border-radius:3px;}
+  .mapwrap{ border:1px solid var(--line);border-radius:22px;background:linear-gradient(180deg,#100B17,#0B0710);padding:8px;}
+  svg .tbl{ cursor:pointer;transition:.18s;} svg .tbl.booked{ cursor:not-allowed;}
+  .bookbar{ position:absolute;left:0;right:0;bottom:0;padding:16px 20px 18px;background:linear-gradient(180deg,rgba(11,7,16,0),rgba(11,7,16,.96) 28%);z-index:30;}
+
+  .summary{ background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;margin-top:18px;}
+  .summary .li{ display:flex;justify-content:space-between;padding:8px 0;font-size:14px;color:var(--muted);border-bottom:1px solid rgba(43,35,54,.6);}
+  .summary .li:last-child{border:0;} .summary .li b{color:var(--txt);}
+  .summary .total{ display:flex;justify-content:space-between;align-items:baseline;margin-top:12px;}
+  .summary .total .amt{ font-family:var(--display);font-size:30px;}
+  .micro{ font-size:11px;color:#6f6582;line-height:1.5;margin-top:10px;}
+  .stepper{ display:flex;align-items:center;gap:14px;} .stepper button{ width:42px;height:42px;border-radius:12px;border:1px solid var(--line);background:var(--surface-2);color:var(--txt);font-size:22px;cursor:pointer;}
+  .stepper .val{ font-family:var(--display);font-size:26px;min-width:30px;text-align:center;}
+  .splitrow{ display:flex;gap:12px;} .splitrow .col{ flex:1;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;}
+
+  /* status / pass */
+  .center{ flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;gap:6px;}
+  .spinner{ width:62px;height:62px;border-radius:50%;border:4px solid var(--line);border-top-color:var(--magenta);animation:spin 1s linear infinite;margin-bottom:10px;} @keyframes spin{to{transform:rotate(360deg);}}
+  .checkwrap{ width:84px;height:84px;border-radius:50%;background:linear-gradient(120deg,var(--magenta),var(--violet));display:flex;align-items:center;justify-content:center;box-shadow:0 12px 40px -8px rgba(255,61,174,.6);}
+  .pass{ margin:8px 20px 0;border-radius:24px;overflow:hidden;border:1px solid var(--line);background:var(--surface);}
+  .pass .head{ padding:20px;background:linear-gradient(120deg,rgba(255,61,174,.25),rgba(122,77,255,.22));}
+  .pass .qr{ display:flex;justify-content:center;padding:22px;}
+  .pass .det{ padding:0 20px 20px;display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .pass .det .k{ font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
+  .pass .det .v{ font-weight:700;font-size:15px;margin-top:3px;}
+
+  /* tabbar */
+  .tabbar{ flex:none;height:78px;display:flex;align-items:flex-start;justify-content:space-around;padding-top:11px;background:rgba(11,7,16,.92);border-top:1px solid var(--line);backdrop-filter:blur(10px);}
+  .tab{ display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10px;color:var(--muted);cursor:pointer;font-weight:600;position:relative;transition:.18s;}
+  .tab.on{ color:var(--magenta);} .tab svg{ width:24px;height:24px;}
+  .tab .dot{ position:absolute;top:-6px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:50%;background:var(--magenta);opacity:0;transition:.2s;}
+  .tab.on .dot{ opacity:1;}
+  .badge-n{ position:absolute;top:-3px;right:-8px;background:var(--magenta);color:#0B0710;font-size:9px;font-weight:800;min-width:15px;height:15px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 3px;}
+
+  /* avatars */
+  .av{ border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--display);color:#0B0710;flex:none;}
+  .online{ width:11px;height:11px;border-radius:50%;background:var(--ok);border:2px solid var(--ink);position:absolute;bottom:0;right:0;}
+
+  /* lists rows */
+  .lrow{ display:flex;align-items:center;gap:13px;padding:13px 0;border-bottom:1px solid rgba(43,35,54,.55);cursor:pointer;}
+  .lrow .nm{ font-weight:700;font-size:15px;} .lrow .meta2{ font-size:13px;color:var(--muted);margin-top:2px;}
+  .pos{ position:relative;}
+
+  /* chat */
+  .chatbody{ flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:9px;}
+  .chatbody::-webkit-scrollbar{width:0;}
+  .bub{ max-width:74%;padding:11px 14px;border-radius:18px;font-size:14px;line-height:1.4;}
+  .bub.me{ align-self:flex-end;background:linear-gradient(120deg,var(--magenta),var(--violet));color:#fff;border-bottom-right-radius:5px;}
+  .bub.them{ align-self:flex-start;background:var(--surface-2);border:1px solid var(--line);border-bottom-left-radius:5px;}
+  .composer{ flex:none;display:flex;gap:9px;padding:12px 14px 16px;border-top:1px solid var(--line);background:rgba(11,7,16,.9);}
+  .composer input{ flex:1;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:12px 16px;color:var(--txt);font-family:var(--body);font-size:14px;}
+  .send{ width:46px;height:46px;border-radius:50%;border:0;background:linear-gradient(120deg,var(--magenta),var(--violet));color:#fff;cursor:pointer;flex:none;display:flex;align-items:center;justify-content:center;}
+
+  /* profile */
+  .phero{ padding:24px 20px 18px;text-align:center;background:linear-gradient(180deg,rgba(122,77,255,.18),transparent);}
+  .pstats{ display:flex;gap:10px;margin-top:18px;}
+  .pstats .b{ flex:1;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 8px;text-align:center;}
+  .pstats .n{ font-family:var(--display);font-size:24px;} .pstats .l{ font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:2px;}
+  .tog{ width:48px;height:28px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);position:relative;cursor:pointer;transition:.2s;flex:none;}
+  .tog.on{ background:linear-gradient(120deg,var(--ok),var(--teal));border-color:transparent;}
+  .tog i{ position:absolute;top:2px;left:2px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.2s;}
+  .tog.on i{ left:22px;}
+  .setrow{ display:flex;align-items:center;justify-content:space-between;padding:15px 0;border-bottom:1px solid rgba(43,35,54,.55);}
+
+  /* venue host studio */
+  .studio-prev{ border:1px solid var(--line);border-radius:18px;overflow:hidden;}
+  .stylepick{ display:flex;gap:8px;margin-top:10px;overflow-x:auto;scrollbar-width:none;} .stylepick::-webkit-scrollbar{display:none;}
+  .styleopt{ flex:none;width:74px;height:54px;border-radius:12px;overflow:hidden;border:2px solid transparent;cursor:pointer;position:relative;}
+  .styleopt.on{ border-color:var(--magenta);}
+  .styleopt svg{ width:100%;height:100%;display:block;}
+  .req{ border:1px solid var(--line);border-radius:18px;background:var(--surface);padding:16px;margin-top:14px;}
+  .req .actions{ display:flex;gap:10px;margin-top:14px;}
+  .badge{ font-size:11px;font-weight:700;padding:5px 10px;border-radius:999px;letter-spacing:.04em;}
+  .empty{ text-align:center;color:var(--muted);padding:48px 24px;font-size:14px;line-height:1.6;}
+  .stat{ display:flex;gap:10px;margin-top:16px;}
+  .stat .box{ flex:1;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;}
+  .stat .box .n{ font-family:var(--display);font-size:24px;} .stat .box .l{ font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.09em;margin-top:2px;}
+
+  .clubselect{ display:flex;gap:8px;overflow-x:auto;padding:12px 0 6px;scrollbar-width:none;}
+  .clubselect::-webkit-scrollbar{display:none;}
+  .clubopt{ flex:none;display:flex;align-items:center;gap:9px;border:1px solid var(--line);background:var(--surface);border-radius:16px;padding:9px 12px;cursor:pointer;min-width:154px;}
+  .clubopt.on{ border-color:var(--magenta);background:rgba(255,61,174,.08);}
+  .clubdot{ width:26px;height:26px;border-radius:9px;flex:none;}
+  .clubopt .cname{font-weight:800;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px;}
+  .clubopt .cmeta{font-size:11px;color:var(--muted);margin-top:1px;}
+  .back svg{width:22px;height:22px;display:block;}
+
+  /* growth features added: availability, split-pay, promoters, queue bypass */
+  .availability{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:12px;}
+  .availability .a{background:rgba(255,255,255,.035);border:1px solid rgba(43,35,54,.8);border-radius:12px;padding:8px 6px;text-align:center;}
+  .availability .a .n{font-family:var(--display);font-size:18px;line-height:1;color:var(--txt);}
+  .availability .a .l{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:4px;}
+  .availability .a.low .n{color:var(--gold);} .availability .a.out .n{color:var(--warn);}
+  .invitechip{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 11px;font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;white-space:nowrap;}
+  .invitechip.on{border-color:var(--teal);background:rgba(63,224,192,.1);color:var(--txt);}
+  .promobox{background:linear-gradient(120deg,rgba(255,194,75,.13),rgba(255,61,174,.08));border:1px solid rgba(255,194,75,.28);border-radius:18px;padding:14px;margin-top:14px;}
+  .payreq{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-top:9px;}
+  .payreq .left{display:flex;align-items:center;gap:10px;min-width:0;}
+  .payreq .who{font-weight:800;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .payreq .due{font-size:12px;color:var(--muted);margin-top:2px;}
+  .payreq.paid{border-color:rgba(63,224,160,.35);background:rgba(63,224,160,.07);}
+  .fee-banner{margin:12px 0 4px;padding:10px 12px;border-radius:14px;border:1px solid rgba(255,194,75,.35);background:rgba(255,194,75,.09);color:var(--gold);font-size:12px;font-weight:800;text-align:center;}
+  .addfriend{display:flex;gap:8px;margin-top:10px;}
+  .addfriend .input{flex:1;}
+  .bypass{display:flex;gap:10px;align-items:center;background:rgba(63,224,160,.09);border:1px solid rgba(63,224,160,.26);border-radius:16px;padding:12px;margin:14px 20px 0;}
+  .bypass .ico{width:34px;height:34px;border-radius:10px;background:linear-gradient(120deg,var(--ok),var(--teal));display:flex;align-items:center;justify-content:center;color:#0B0710;font-weight:900;flex:none;}
+  .minirow{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;font-size:13px;color:var(--muted);padding:8px 0;border-bottom:1px solid rgba(43,35,54,.45);}
+  .minirow:last-child{border-bottom:0}.minirow b{color:var(--txt)}
+
+  .timerbox{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid rgba(255,194,75,.35);background:rgba(255,194,75,.08);border-radius:16px;padding:12px 14px;margin-top:14px;}
+  .timerbox.danger{border-color:rgba(255,107,107,.45);background:rgba(255,107,107,.09);}
+  .timerbox .time{font-family:var(--display);font-size:24px;color:var(--gold);letter-spacing:.03em;}
+  .timerbox.danger .time{color:var(--warn);}
+  .searchresults{margin-top:10px;border:1px solid var(--line);border-radius:16px;background:rgba(28,22,38,.55);overflow:hidden;}
+  .searchresults .hintrow{padding:12px 14px;color:var(--muted);font-size:12px;line-height:1.4;}
+  .searchhit{display:flex;align-items:center;gap:10px;padding:11px 12px;border-bottom:1px solid rgba(43,35,54,.55);}
+  .searchhit:last-child{border-bottom:0;}
+  .searchhit .match{font-size:11px;color:var(--muted);margin-top:2px;}
+
+  .sharebox{background:linear-gradient(120deg,rgba(43,212,255,.09),rgba(122,77,255,.08));border:1px solid rgba(43,212,255,.24);border-radius:18px;padding:14px;margin-top:14px;}
+  .sharelink{display:flex;gap:8px;margin-top:10px;}
+  .sharelink .input{font-size:12px;padding:12px;}
+  .nativeinvite{border:1px solid var(--line);background:rgba(20,16,25,.9);border-radius:16px;padding:12px;margin-top:12px;}
+  .toast{font-size:12px;color:var(--ok);margin-top:8px;font-weight:700;}
+  .safeicon{font-weight:900;letter-spacing:.04em;}
+
+  /* interaction hardening */
+  .clubselect,.clubopt,.req .actions,.stylepick,.styleopt,.chips,.chip{ position:relative; z-index:6; pointer-events:auto; }
+  .tabbar{ position:relative; z-index:90; pointer-events:auto; }
+  .tab{ position:relative; z-index:91; pointer-events:auto; }
+  .clubopt *,.tab *,.styleopt *{ pointer-events:none; }
+
+
+
+  /* -------- Responsive web-app shell (mobile + desktop, no fake phone frame) -------- */
+  html,body{min-height:100%;}
+  body{background:#050308;}
+  .stage{
+    min-height:100vh;
+    align-items:center;
+    justify-content:flex-start;
+    padding:22px clamp(14px,2vw,32px) 34px;
+  }
+  .phone{
+    width:min(1180px,100%);
+    height:min(880px,calc(100vh - 118px));
+    max-height:none;
+    max-width:none;
+    padding:0;
+    background:rgba(11,7,16,.74);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:28px;
+    overflow:hidden;
+    box-shadow:0 30px 90px -35px rgba(255,61,174,.45),0 24px 80px -35px rgba(43,212,255,.32);
+  }
+  .screen{
+    border-radius:28px;
+    background:linear-gradient(180deg,rgba(20,16,25,.94),rgba(11,7,16,.98));
+  }
+  .notch,.statusbar{display:none!important;}
+  .body{height:100%;}
+  .pad{padding:26px clamp(18px,3vw,42px) 34px;}
+  .topbar{padding:22px clamp(18px,3vw,42px) 10px;}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;}
+  .cover{height:188px;}
+  .h1{font-size:clamp(34px,5vw,64px);}
+  .h2{font-size:clamp(24px,3vw,38px);}
+  .sub{font-size:15px;}
+  .tabbar{
+    height:72px;
+    align-items:center;
+    padding:0 clamp(18px,3vw,42px);
+    justify-content:center;
+    gap:22px;
+  }
+  .tab{min-width:92px;font-size:12px;}
+  .bookbar{position:sticky;bottom:0;margin-top:auto;}
+  .mapwrap{max-width:760px;margin-left:auto;margin-right:auto;}
+  .summary{max-width:680px;}
+  .splitrow{max-width:680px;}
+  .pass{max-width:560px;margin-left:auto;margin-right:auto;}
+  .chatbody{padding:24px clamp(18px,3vw,42px);}
+  .composer{padding:16px clamp(18px,3vw,42px) 20px;}
+  .phero{padding:38px 24px 26px;}
+
+  @media (min-width: 860px){
+    .body .pad > .eyebrow + .h1 + .sub,
+    .body .pad > .sub{max-width:720px;}
+    .lrow{max-width:760px;}
+    .phero .pstats{max-width:560px;margin-left:auto;margin-right:auto;}
+    .setrow{max-width:760px;margin-left:auto;margin-right:auto;}
+    .studio-prev{max-width:760px;}
+    .req{max-width:780px;}
+    .stat{max-width:780px;}
+  }
+
+  @media (max-width: 760px){
+    .stage{padding:0;gap:0;background:#050308;}
+    .roleswitch{margin:10px 10px 8px;max-width:calc(100vw - 20px);overflow:auto;}
+    .phone{
+      width:100%;
+      height:calc(100vh - 58px);
+      border-radius:0;
+      border-left:0;border-right:0;border-bottom:0;
+      box-shadow:none;
+    }
+    .screen{border-radius:0;}
+    .pad{padding:18px 16px 26px;}
+    .topbar{padding:14px 16px 6px;}
+    .cards{display:flex;flex-direction:column;gap:16px;}
+    .cover{height:150px;}
+    .h1{font-size:32px;}
+    .h2{font-size:22px;}
+    .tabbar{height:72px;justify-content:space-around;gap:0;padding:0 6px;}
+    .tab{min-width:auto;font-size:10px;}
+    .splitrow{flex-direction:column;}
+    .bookbar{position:absolute;}
+  }
+
+</style>
+
+<script>
+(function(){
+  const root=document.getElementById('root');
+  const fmt=n=>'R'+Math.round(n).toLocaleString('en-ZA');
+  const SERVICE_RATE=0.05;
+  const serviceFee=n=>Math.ceil((Number(n)||0)*SERVICE_RATE);
+  const withServiceFee=n=>(Number(n)||0)+serviceFee(n);
+  const code=()=>Math.random().toString(36).slice(2,6).toUpperCase()+'-'+Math.random().toString(36).slice(2,6).toUpperCase();
+  const esc=s=>(''+s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+
+  // ---------- DATA ----------
+  const COVERS=['laser','neon','sunset','mono'];
+  const venues=[
+    {id:'v1',name:'Cobalt Room',area:'Sandton',dist:0.8,genre:'Amapiano / House',when:'Tonight 22:00',minFrom:1500,tagline:'Rooftop sessions, deep house till late.',style:'laser',g:['#2BD4FF','#7A4DFF'],status:'live',owner:'club'},
+    {id:'v2',name:'Velvet & Vine',area:'Rosebank',dist:3.4,genre:'R&B / Hip-Hop',when:'Fri 23:00',minFrom:2000,tagline:'Low light, good people, better bottles.',style:'neon',g:['#FF3DAE','#7A4DFF'],status:'live',owner:'demo'},
+    {id:'v3',name:'The Loft 88',area:'Braamfontein',dist:6.1,genre:'Afro-Tech',when:'Sat 22:30',minFrom:1000,tagline:'Underground room, no phones on the floor.',style:'mono',g:['#FFC24B','#FF3DAE'],status:'live',owner:'demo'},
+    {id:'v4',name:'Mzansi Skybar',area:'Maboneng',dist:7.8,genre:'Deep House',when:'Tonight 21:00',minFrom:1200,tagline:'Skyline views, sunset to sunrise.',style:'sunset',g:['#3FE0C0','#2BD4FF'],status:'live',owner:'demo'},
+    {id:'v5',name:'Ember',area:'Soweto',dist:18.5,genre:'Gqom / Amapiano',when:'Sat 22:00',minFrom:800,tagline:'Where the night actually starts.',style:'neon',g:['#FF8A3D','#FF3DAE'],status:'live',owner:'demo'},
+  ];
+  const pendingClub={id:'v6',name:'Lumen',area:'Sandton',dist:1.2,genre:'Techno',when:'-',minFrom:2500,tagline:'New techno cathedral.',style:'mono',g:['#9A8FB0','#2BD4FF'],status:'pending',owner:'applicant',applicant:'Nadia R.'};
+  const AREAS=['All','Sandton','Rosebank','Braamfontein','Maboneng','Soweto'];
+
+  const people={
+    me:{id:'me',name:'Lebo Khumalo',handle:'@lebok',g:['#FF3DAE','#7A4DFF'],bio:'Amapiano > everything. Sandton based.',out:true,nights:14,tables:6,crew:23},
+    p1:{id:'p1',name:'Naledi M.',handle:'@naledi',g:['#3FE0C0','#2BD4FF'],online:true},
+    p2:{id:'p2',name:'Sipho D.',handle:'@siphod',g:['#FFC24B','#FF8A3D'],online:false},
+    p3:{id:'p3',name:'Kara V.',handle:'@karav',g:['#FF3DAE','#FFC24B'],online:true},
+    p4:{id:'p4',name:'Tumi B.',handle:'@tumi',g:['#7A4DFF','#2BD4FF'],online:false},
+    p5:{id:'p5',name:'Jay R.',handle:'@jayr',g:['#2BD4FF','#3FE0C0'],online:true},
+  };
+
+  const S={
+    role:null, splashDone:false,
+    screen:'home', tab:'discover',
+    auth:{name:'',handle:'',email:''}, signupRole:'user',
+    area:'All', nearMe:false,
+    venueId:null, selTable:null, men:1, women:1, activeReq:null,
+    splitPay:true, invited:['p1','p3'], promoterCode:'JESSE10', friendDraft:'', shareDraft:'', shareSent:null, clubVenueId:'v1', clubRequestVenueId:'all',
+    publicTables:[{id:'pub-own-demo',bookingId:'r-own-demo',venue:'Cobalt Room',vid:'v1',table:'B1',tier:'booth',owner:'Lebo Khumalo',ownerId:'me',malePrice:650,femalePrice:450,price:650,seatsOpen:2,status:'open',joinRequests:[{id:'jr-own-demo',userId:'p5',name:'Jay R.',gender:'male',amount:650,status:'pending'}],joiners:[]},{id:'pub-demo',bookingId:null,venue:'Cobalt Room',vid:'v1',table:'B2',tier:'booth',owner:'Naledi M.',ownerId:'p1',malePrice:700,femalePrice:500,price:700,seatsOpen:3,status:'open',joinRequests:[{id:'jr-demo',userId:'p5',name:'Jay R.',gender:'male',amount:700,status:'pending'}],joiners:[{id:'p2',name:'Sipho D.',gender:'female',amount:500,status:'approved'}]}],
+    requests:[{id:'r-own-demo',venue:'Cobalt Room',vid:'v1',table:'B1',tier:'booth',men:2,women:2,total:3150,subtotal:3000,serviceFee:150,paidNow:3150,min:3000,status:'confirmed',deadlineMs:null,code:'DEMO-TBL1',who:'You',t:'confirmed',splitPay:false,invited:[],promo:'JESSE10',payments:[{id:'host',name:'Lebo Khumalo',amount:3150,status:'paid'}]},{id:'r-seed',venue:'Cobalt Room',vid:'v1',table:'B2',tier:'booth',men:3,women:2,total:3150,subtotal:3000,serviceFee:150,paidNow:1050,min:3000,status:'pending',deadlineMs:Date.now()+18*60*1000,who:'Thabo M.',t:'2 min ago',splitPay:true,invited:['p1','p3'],promo:'THABO10',payments:[{id:'host',name:'Thabo M.',amount:1050,status:'paid'},{id:'p1',name:'Naledi M.',amount:1050,status:'pending'},{id:'p3',name:'Kara V.',amount:1050,status:'pending'}]},{id:'r-rose',venue:'Velvet & Vine',vid:'v2',table:'V1',tier:'vip',men:2,women:3,total:6300,subtotal:6000,serviceFee:300,paidNow:6300,min:6000,status:'pending',deadlineMs:Date.now()+12*60*1000,who:'Kara V.',t:'8 min ago',splitPay:false,invited:[],promo:'KARA',payments:[{id:'host',name:'Kara V.',amount:6300,status:'paid'}]}],
+    friends:['p1','p2','p3'],
+    convos:{ p1:[{f:'them',t:'You going to Cobalt tonight??'},{f:'me',t:'Booked a booth already nice'}],
+             p3:[{f:'them',t:'send me the Seat\'d link'}] },
+    activeChat:null, activeJoin:null,
+    pendingClubs:[pendingClub],
+    tables:{},
+  };
+  const tierMeta={ vip:{label:'VIP',color:'#FFC24B'}, booth:{label:'Booth',color:'#FF3DAE'}, std:{label:'Standard',color:'#2BD4FF'} };
+
+  const clubVenue=()=>venue(S.clubVenueId)||venue('v1');
+  function clubSelectorHTML(){
+    const opts=[...venues.filter(v=>v.status==='live'), ...S.pendingClubs];
+    if(!opts.some(v=>v.id===S.clubVenueId)) S.clubVenueId=(opts[0]&&opts[0].id)||'v1';
+    return `<div class="clubselect">${opts.map(v=>`<div class="clubopt ${S.clubVenueId===v.id?'on':''}" data-clubselect="${v.id}">
+      <span class="clubdot" style="background:linear-gradient(135deg,${v.g[0]},${v.g[1]})"></span>
+      <div><div class="cname">${esc(v.name)}</div><div class="cmeta">${v.status==='pending'?'Pending review':esc(v.area)}</div></div>
+    </div>`).join('')}</div>`;
+  }
+  function clubRequestSelectorHTML(){
+    const opts=[...venues.filter(v=>v.status==='live'), ...S.pendingClubs];
+    const count=id=>S.requests.filter(r=>(id==='all'||r.vid===id)&&r.status==='pending').length;
+    return `<div class="clubselect">
+      <div class="clubopt ${S.clubRequestVenueId==='all'?'on':''}" data-clubreq="all">
+        <span class="clubdot" style="background:linear-gradient(135deg,var(--magenta),var(--blue))"></span>
+        <div><div class="cname">All clubs</div><div class="cmeta">${count('all')} waiting</div></div>
+      </div>
+      ${opts.map(v=>`<div class="clubopt ${S.clubRequestVenueId===v.id?'on':''}" data-clubreq="${v.id}">
+        <span class="clubdot" style="background:linear-gradient(135deg,${v.g[0]},${v.g[1]})"></span>
+        <div><div class="cname">${esc(v.name)}</div><div class="cmeta">${count(v.id)} waiting</div></div>
+      </div>`).join('')}
+    </div>`;
+  }
+  const publicJoinPrice=(pt,gender)=> gender==='female' ? (pt.femalePrice||pt.price||0) : (pt.malePrice||pt.price||0);
+  const publicJoinCharge=(pt,gender)=>withServiceFee(publicJoinPrice(pt,gender));
+  const bookingMath=(t)=>{
+    const entryTotal=0;
+    const groupTotal=t.min; // minimum spend subtotal before Seat'd fee
+    const fee=serviceFee(groupTotal);
+    const chargeTotal=groupTotal+fee;
+    const splitCount=S.splitPay ? Math.max(1,S.invited.length+1) : 1;
+    const myShare=S.splitPay ? Math.ceil(chargeTotal/splitCount) : chargeTotal;
+    return {entryTotal,groupTotal,fee,chargeTotal,splitCount,myShare};
+  };
+  function splitPaymentsFor(t,v){
+    const m=bookingMath(t);
+    const invited=S.splitPay?S.invited.slice():[];
+    const base=Math.floor(m.chargeTotal/m.splitCount);
+    const remainder=m.chargeTotal-(base*m.splitCount);
+    const hostAmount=S.splitPay?base+remainder:m.chargeTotal;
+    const rows=[{id:'host',name:people.me.name,amount:hostAmount,status:'paid'}];
+    invited.forEach(id=>{const p=people[id]; if(p) rows.push({id,name:p.name,amount:base,status:'pending'});});
+    return rows;
+  }
+  function paidCount(r){ const ps=r.payments||[]; return ps.filter(p=>p.status==='paid').length+'/'+(ps.length||1); }
+  function amountOutstanding(r){ return (r.payments||[]).filter(p=>p.status!=='paid').reduce((a,p)=>a+p.amount,0); }
+  function paymentRowsHTML(r,editable){ const ps=r.payments||[]; if(!ps.length)return ''; return `<div style="margin-top:14px;text-align:left"><div class="eyebrow" style="color:var(--teal)">Payment pings</div>${ps.map(p=>`<div class="payreq ${p.status==='paid'?'paid':''}"><div class="left"><div>${p.id==='host'?av(people.me,32):(people[p.id]?av(people[p.id],32):'<div class="av" style="width:32px;height:32px;font-size:14px;background:linear-gradient(135deg,var(--blue),var(--violet))">?</div>')}</div><div><div class="who">${esc(p.name)}</div><div class="due">${fmt(r&&r.status==='confirmed'?adjustedShareAmount(p,r):p.amount)} - ${p.status==='paid'?'paid':'waiting for payment'}</div></div></div>${editable&&p.status!=='paid'?`<button class="btn sm ghost" style="width:auto;padding:8px 10px" data-payfriend="${p.id}">Mark paid</button>`:`<span class="badge" style="background:${p.status==='paid'?'rgba(63,224,160,.15)':'rgba(255,194,75,.14)'};color:${p.status==='paid'?'var(--ok)':'var(--gold)'}">${p.status==='paid'?'PAID':'PINGED'}</span>`}</div>`).join('')}</div>`; }
+  function sendPaymentPings(r){ (r.invited||[]).forEach(id=>{ const p=people[id]; if(!p)return; S.convos[id]=S.convos[id]||[]; S.convos[id].push({f:'me',t:`Seat'd payment request: ${r.venue} ${r.table}. Please pay your share (${fmt((r.payments||[]).find(x=>x.id===id)?.amount||0)}) to confirm the table.`}); }); }
+  function allPaid(r){ const ps=r.payments||[]; return ps.length>0 && ps.every(p=>p.status==='paid'); }
+  function timeLeftMs(r){ if(!r.deadlineMs) return 0; return Math.max(0, r.deadlineMs-Date.now()); }
+  function timeLeftText(r){ const ms=timeLeftMs(r); const m=Math.floor(ms/60000), sec=Math.floor((ms%60000)/1000); return String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0'); }
+  function refreshExpiries(){ let changed=false; S.requests.forEach(r=>{ if(r.status==='pending' && r.deadlineMs && !allPaid(r) && Date.now()>=r.deadlineMs){ r.status='cancelled'; r.cancelReason='Payment window expired'; changed=true; }}); return changed; }
+  function deadlineHTML(r,who){ if(r.status!=='pending'||!r.deadlineMs||allPaid(r)) return ''; const danger=timeLeftMs(r)<=5*60000; return `<div class="timerbox ${danger?'danger':''}" data-timerbox="${r.id}"><div><div class="nm" style="font-size:14px">${who==='club'?'Payment window':'Complete payment window'}</div><div class="meta2">Auto-cancels unless every invited person pays in 20 minutes.</div></div><div class="time" data-timer="${r.id}">${timeLeftText(r)}</div></div>`; }
+  function tableCostRecovered(r){
+    return S.publicTables.filter(pt=>pt.bookingId===r.id).reduce((sum,pt)=>sum+(pt.joiners||[]).filter(j=>j.status==='approved').reduce((a,j)=>a+(j.amount||publicJoinPrice(pt,j.gender)||0),0),0);
+  }
+  function adjustedShareAmount(p,r){
+    const paid=(r.payments||[]).filter(x=>x.status==='paid');
+    const base=p.amount||0;
+    if(!paid.length) return base;
+    const credit=Math.floor(tableCostRecovered(r)/paid.length);
+    return Math.max(0,base-credit);
+  }
+  function publicTableForBooking(id){ return S.publicTables.find(pt=>pt.bookingId===id); }
+  function tableSeatLimitBy(vid,tableId){ const t=tablesFor(vid).find(x=>x.id===tableId); return t ? t.seats : 0; }
+  function publicInitialCount(pt){ const r=pt.bookingId ? S.requests.find(x=>x.id===pt.bookingId) : null; return r ? ((r.men||0)+(r.women||0)) : 2; }
+  function publicApprovedCount(pt){ return (pt.joiners||[]).filter(j=>j.status==='approved').length; }
+  function publicSpotsOpen(pt){ const limit=tableSeatLimitBy(pt.vid,pt.table) || (publicInitialCount(pt)+(pt.seatsOpen||0)+publicApprovedCount(pt)); return Math.max(0, limit-publicInitialCount(pt)-publicApprovedCount(pt)); }
+  function openPublicTables(){ return S.publicTables.filter(pt=>pt.status==='open' && publicSpotsOpen(pt)>0); }
+  function joinersHTML(pt){
+    const js=(pt.joiners||[]).filter(j=>j.status==='approved');
+    if(!js.length) return '<div class="meta2" style="margin-top:8px">No outside joiners approved yet.</div>';
+    return `<div class="joiners">${js.map(j=>`<span class="miniav">${esc((j.name||'?')[0])}</span>`).join('')}<span class="meta2">${js.length} people joined | ${fmt(js.reduce((a,j)=>a+(j.amount||publicJoinPrice(pt,j.gender)||0),0))} recovered</span></div>`;
+  }
+  function publicTableCard(pt,mode){
+    const v=venue(pt.vid)||{name:pt.venue,area:''};
+    const requested=(pt.joinRequests||[]).some(j=>j.userId==='me'&&j.status==='pending');
+    const joined=(pt.joiners||[]).some(j=>j.id==='me');
+    const mPrice=publicJoinPrice(pt,'male'), fPrice=publicJoinPrice(pt,'female'), spots=publicSpotsOpen(pt);
+    const joinBtns = spots<=0 ? `<button class="btn sm ghost" style="margin-top:13px" disabled>Table full</button>` : requested||joined
+      ? `<button class="btn sm" style="margin-top:13px" disabled>${joined?'Already joined':'Request sent'}</button>`
+      : `<div class="splitrow" style="margin-top:13px"><button class="btn sm" data-joinpublic="${pt.id}:male">Join as male - ${fmt(mPrice)}</button><button class="btn sm ghost" data-joinpublic="${pt.id}:female">Join as female - ${fmt(fPrice)}</button></div>`;
+    return `<div class="publiccard">
+      <div class="row"><div><div class="eyebrow" style="color:var(--teal)">Open table</div><div class="nm" style="font-size:17px">${esc(pt.venue)} | ${esc(pt.table)}</div><div class="meta2">Hosted by ${esc(pt.owner)} | ${tierMeta[pt.tier]?.label||'Table'} | ${spots} spots open</div></div><span class="badge" style="background:rgba(63,224,192,.14);color:var(--teal)">Male ${fmt(mPrice)} | Female ${fmt(fPrice)}</span></div>
+      ${joinersHTML(pt)}
+      ${mode==='owner'?ownerPublicControls(pt):joinBtns}
+    </div>`;
+  }
+  function ownerPublicControls(pt){
+    const pending=(pt.joinRequests||[]).filter(j=>j.status==='pending');
+    return `<div style="margin-top:12px">
+      <div class="splitrow">
+        <div class="field" style="margin-top:0;flex:1"><label>Male join price</label><input class="input" id="pub-male-price-${pt.id}" value="${publicJoinPrice(pt,'male')}"></div>
+        <div class="field" style="margin-top:0;flex:1"><label>Female join price</label><input class="input" id="pub-female-price-${pt.id}" value="${publicJoinPrice(pt,'female')}"></div>
+      </div>
+      <button class="btn sm ghost" style="margin-top:8px" data-savepubprice="${pt.id}">Save join prices</button>
+      <div class="eyebrow" style="margin-top:14px;color:var(--gold)">Join requests</div>
+      ${pending.length?pending.map(j=>`<div class="joinreq"><div><div class="who">${esc(j.name)}</div><div class="meta2">${esc((j.gender||'male').replace(/^./,c=>c.toUpperCase()))} request | wants to join for ${fmt(j.amount||publicJoinCharge(pt,j.gender))}</div></div><div style="display:flex;gap:8px"><button class="btn sm" style="width:auto;padding:8px 10px" data-approvejoin="${pt.id}:${j.id}">Approve</button><button class="btn sm ghost" style="width:auto;padding:8px 10px" data-denyjoin="${pt.id}:${j.id}">Deny</button></div></div>`).join(''):'<div class="meta2" style="margin-top:8px">No pending join requests.</div>'}
+    </div>`;
+  }
+  function updateTimerDisplays(){
+    root.querySelectorAll('[data-timer]').forEach(el=>{
+      const r=S.requests.find(x=>x.id===el.dataset.timer);
+      if(!r) return;
+      el.textContent=timeLeftText(r);
+      const box=root.querySelector(`[data-timerbox="${r.id}"]`);
+      if(box) box.classList.toggle('danger', timeLeftMs(r)<=5*60000);
+    });
+  }
+  function searchPeople(raw){ const q=(raw||'').trim().toLowerCase().replace(/^@/,''); const pool=Object.values(people).filter(p=>p.id!=='me'&&!S.friends.includes(p.id)); if(!q) return pool.slice(0,3).map(p=>({p,score:0,label:'Suggested'}));
+    const score=p=>{const n=p.name.toLowerCase(), h=p.handle.toLowerCase().replace(/^@/,''); if(n===q||h===q)return 100; if(n.startsWith(q)||h.startsWith(q))return 80; if(n.includes(q)||h.includes(q))return 60; let hits=0; q.split('').forEach(c=>{if((n+h).includes(c))hits++;}); return hits;};
+    return pool.map(p=>({p,score:score(p),label:score(p)>=60?'Match':'Closest result'})).filter(x=>x.score>0).sort((a,b)=>b.score-a.score).slice(0,3); }
+  function friendSearchHTML(raw,context){ const hits=searchPeople(raw); const q=(raw||'').trim(); if(!hits.length) return `<div class="searchresults"><div class="hintrow">No close match found. Press Add to create ${esc(q||'a new friend')}.</div></div>`;
+    return `<div class="searchresults">${hits.map(x=>`<div class="searchhit"><div>${av(x.p,34)}</div><div style="flex:1"><div class="who">${esc(x.p.name)}</div><div class="match">${esc(x.p.handle)} - ${x.label}</div></div><button class="btn sm ghost" style="width:auto;padding:8px 10px" data-addsearch="${x.p.id}" data-context="${context||''}">${context==='booking'?'Invite':'Add'}</button></div>`).join('')}</div>`; }
+  function availabilityFor(id){ const ts=tablesFor(id), by={vip:[0,0],booth:[0,0],std:[0,0]}; ts.forEach(t=>{by[t.tier][1]++; if(!t.booked)by[t.tier][0]++;}); return by; }
+  function availabilityHTML(id){ const a=availabilityFor(id); return `<div class="availability">${[['vip','VIP'],['booth','Booths'],['std','Standard']].map(x=>{const n=a[x[0]][0], cls=n===0?'out':n<=1?'low':''; return `<div class="a ${cls}"><div class="n">${n?n:'Sold'}</div><div class="l">${n?x[1]:'out'}</div></div>`;}).join('')}</div>`; }
+  function makeTables(){return[
+    {id:'V1',x:46,y:60,w:64,h:38,tier:'vip',seats:8,min:6000,eM:350,eW:200,booked:false},
+    {id:'V2',x:230,y:60,w:64,h:38,tier:'vip',seats:8,min:6000,eM:350,eW:200,booked:true},
+    {id:'B1',x:18,y:140,w:54,h:34,tier:'booth',seats:6,min:3000,eM:250,eW:150,booked:false},
+    {id:'B2',x:18,y:188,w:54,h:34,tier:'booth',seats:6,min:3000,eM:250,eW:150,booked:false},
+    {id:'B3',x:268,y:140,w:54,h:34,tier:'booth',seats:6,min:3000,eM:250,eW:150,booked:true},
+    {id:'B4',x:268,y:188,w:54,h:34,tier:'booth',seats:6,min:3000,eM:250,eW:150,booked:false},
+    {id:'S1',x:60,y:300,w:48,h:30,tier:'std',seats:4,min:1500,eM:150,eW:100,booked:false},
+    {id:'S2',x:146,y:300,w:48,h:30,tier:'std',seats:4,min:1500,eM:150,eW:100,booked:false},
+    {id:'S3',x:232,y:300,w:48,h:30,tier:'std',seats:4,min:1500,eM:150,eW:100,booked:true},
+  ];}
+  const tablesFor=id=>{ if(!S.tables[id])S.tables[id]=makeTables(); return S.tables[id]; };
+  const venue=id=>venues.find(v=>v.id===id)||S.pendingClubs.find(v=>v.id===id);
+
+  // ---------- COVER ART (realistic generated club photos) ----------
+  function cover(v,h){ h=h||150;
+    const id=(v.id||('v'+v.name)).replace(/[^a-zA-Z0-9]/g,'');
+    const a=v.g[0], b=v.g[1];
+    const seed=[...v.name].reduce((n,ch)=>n+ch.charCodeAt(0),0);
+    const rand=i=>{ const x=Math.sin(seed+i*999)*10000; return x-Math.floor(x); };
+    const theme=(v.style||'neon');
+    const isTiny=h<=60;
+    const peopleCount=isTiny?0:18;
+    let crowd='';
+    for(let i=0;i<peopleCount;i++){
+      const x=8+rand(i)*324, headY=h-42-rand(i+30)*18, bodyH=18+rand(i+60)*16;
+      const opacity=.35+rand(i+80)*.35;
+      crowd+=`<g opacity="${opacity.toFixed(2)}"><circle cx="${x.toFixed(1)}" cy="${headY.toFixed(1)}" r="${(3+rand(i+10)*2).toFixed(1)}" fill="#050308"/><path d="M${(x-5).toFixed(1)} ${headY+6} Q${x.toFixed(1)} ${headY+bodyH} ${(x+6).toFixed(1)} ${headY+6}" fill="#050308"/></g>`;
+    }
+    let bottles='';
+    if(!isTiny){
+      for(let i=0;i<7;i++){
+        const x=36+i*42+rand(i+100)*8, y=h-34-rand(i+120)*8;
+        bottles+=`<g opacity=".72"><rect x="${x}" y="${y}" width="7" height="22" rx="2" fill="#09050d"/><rect x="${x+1}" y="${y-5}" width="5" height="8" rx="1.5" fill="#09050d"/><rect x="${x+1}" y="${y+8}" width="5" height="5" rx="1" fill="${i%2?a:b}" opacity=".75"/></g>`;
+      }
+    }
+    const lasers=Array.from({length: theme==='mono'?3:7},(_,i)=>{
+      const x=20+rand(i+150)*300, dx=-80+rand(i+170)*160;
+      const col=i%2?a:b;
+      return `<path class="beam" d="M${x.toFixed(1)} -8 L${(x+dx).toFixed(1)} ${h+8}" stroke="${col}" stroke-width="${theme==='laser'?3:2}" opacity=".38" filter="url(#photoGlow-${id})"/>`;
+    }).join('');
+    const lights=Array.from({length:isTiny?5:16},(_,i)=>{
+      const x=10+rand(i+200)*320, y=6+rand(i+220)*(h*.45), r=2+rand(i+240)*7;
+      const col=i%3===0?'#fff':(i%3===1?a:b);
+      return `<circle class="glow" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(1)}" fill="${col}" opacity="${(.18+rand(i+260)*.34).toFixed(2)}" filter="url(#photoGlow-${id})"/>`;
+    }).join('');
+    const vipBooths=!isTiny?`<g opacity=".92">
+      <path d="M18 ${h-42} Q74 ${h-63} 130 ${h-42} L130 ${h-13} Q76 ${h-31} 18 ${h-13} Z" fill="#08050c"/>
+      <path d="M210 ${h-44} Q270 ${h-66} 328 ${h-43} L328 ${h-14} Q270 ${h-31} 210 ${h-14} Z" fill="#08050c"/>
+      <path d="M22 ${h-40} Q74 ${h-56} 126 ${h-40}" stroke="${a}" stroke-width="2" opacity=".55"/>
+      <path d="M214 ${h-42} Q270 ${h-58} 324 ${h-42}" stroke="${b}" stroke-width="2" opacity=".55"/>
+    </g>`:'';
+    const dj=!isTiny?`<g opacity=".95">
+      <rect x="118" y="${Math.max(22,h*.28)}" width="104" height="32" rx="8" fill="#06030a"/>
+      <circle cx="148" cy="${Math.max(38,h*.28+16)}" r="8" fill="#141019" stroke="${a}" opacity=".9"/>
+      <circle cx="192" cy="${Math.max(38,h*.28+16)}" r="8" fill="#141019" stroke="${b}" opacity=".9"/>
+      <rect x="160" y="${Math.max(33,h*.28+11)}" width="20" height="4" rx="2" fill="#F5F0FA" opacity=".65"/>
+    </g>`:'';
+    const balcony=theme==='sunset'?`<path d="M0 ${h*.58} C70 ${h*.5} 120 ${h*.66} 180 ${h*.56} S285 ${h*.48} 340 ${h*.59} L340 ${h} L0 ${h} Z" fill="#030206" opacity=".7"/>`:'';
+    const ceiling=theme==='mono'?`<g opacity=".55">${Array.from({length:6},(_,i)=>`<path d="M${i*68} 0 L${170+i*14} ${h*.55}" stroke="#F5F0FA" stroke-width="1" opacity=".12"/>`).join('')}</g>`:'';
+    return `<svg viewBox="0 0 340 ${h}" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <defs>
+        <linearGradient id="photoBg-${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#050308"/><stop offset=".38" stop-color="${a}" stop-opacity=".72"/><stop offset="1" stop-color="${b}" stop-opacity=".78"/></linearGradient>
+        <radialGradient id="spotA-${id}" cx="30%" cy="10%" r="65%"><stop offset="0" stop-color="#fff" stop-opacity=".42"/><stop offset=".24" stop-color="${a}" stop-opacity=".42"/><stop offset="1" stop-color="#050308" stop-opacity="0"/></radialGradient>
+        <radialGradient id="spotB-${id}" cx="76%" cy="18%" r="62%"><stop offset="0" stop-color="#fff" stop-opacity=".32"/><stop offset=".28" stop-color="${b}" stop-opacity=".40"/><stop offset="1" stop-color="#050308" stop-opacity="0"/></radialGradient>
+        <linearGradient id="floor-${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#141019" stop-opacity=".1"/><stop offset="1" stop-color="#000" stop-opacity=".96"/></linearGradient>
+        <filter id="photoGlow-${id}"><feGaussianBlur stdDeviation="3"/></filter>
+      </defs>
+      <rect width="340" height="${h}" fill="url(#photoBg-${id})"/>
+      <rect width="340" height="${h}" fill="url(#spotA-${id})"/>
+      <rect width="340" height="${h}" fill="url(#spotB-${id})"/>
+      ${ceiling}${lasers}${lights}${dj}${balcony}${vipBooths}${bottles}${crowd}
+      <rect y="${h*.62}" width="340" height="${h*.38}" fill="url(#floor-${id})"/>
+      <path d="M0 ${h-22} C55 ${h-38} 96 ${h-20} 145 ${h-31} S244 ${h-48} 340 ${h-27} L340 ${h} L0 ${h} Z" fill="#000" opacity=".78"/>
+      <rect width="340" height="${h}" fill="#000" opacity=".18"/>
+    </svg>`;
+  }
+  function styleSwatch(style,g){ const v={id:'sw'+Math.random().toString(36).slice(2,6),g,style}; return cover(v,54); }
+
+  // ---------- UI bits ----------
+  function av(p,size){ size=size||44; const f=Math.round(size*.42);
+    return `<div class="pos" style="width:${size}px;height:${size}px">
+      <div class="av" style="width:${size}px;height:${size}px;font-size:${f}px;background:linear-gradient(135deg,${p.g[0]},${p.g[1]})">${p.name[0]}</div>
+      ${p.online?`<span class="online"></span>`:''}</div>`; }
+  function statusbar(){ return `<div class="statusbar"><div>23:14</div><div class="dots">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+    <svg width="22" height="11" viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1"><rect x="1" y="1" width="20" height="10" rx="3"/><rect x="3" y="3" width="13" height="6" rx="1.5" fill="currentColor"/><rect x="22" y="4" width="1.5" height="4" rx="1" fill="currentColor"/></svg>
+  </div></div>`; }
+  const ic={
+    bolt:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>',
+    map:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg>',
+    chat:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a8 8 0 0 1-8 8H7l-4 3V12a8 8 0 0 1 8-8h2a8 8 0 0 1 8 8z"/></svg>',
+    user:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>',
+    ticket:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2 2 2 0 0 0 0 4 2 2 0 0 1-2 2H5a2 2 0 0 1-2-2 2 2 0 0 0 0-4z"/><path d="M14 6v12" stroke-dasharray="2 3"/></svg>',
+    store:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l1.5-5h15L21 9M3 9v11h18V9M3 9h18M9 13h6"/></svg>',
+    chart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
+    pin:'<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/></svg>',
+    check:'<svg viewBox="0 0 24 24" width="42" height="42" fill="none" stroke="#0B0710" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13l5 5L20 6"/></svg>',
+    back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5L8 12l7 7"/></svg>',
+    arrow:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
+    pencil:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4"/></svg>',
+  };
+
+  // ---------- AUTH ----------
+  function authView(){
+    if(S.screen==='signup') return signupScreen();
+    return `<div class="splash ${S.splashDone?'':'splash'}" ${S.splashDone?'style="display:none"':''}>
+        <div class="logo" style="font-size:64px">Seat'd</div>
+        <div class="sub" style="letter-spacing:.18em;text-transform:uppercase;font-size:12px">Tables. Not phone calls.</div>
+      </div>
+      ${statusbar()}
+      <div class="body enter"><div class="pad" style="display:flex;flex-direction:column;height:100%;justify-content:flex-end;padding-bottom:36px;min-height:680px">
+        <div style="flex:1;display:flex;flex-direction:column;justify-content:center">
+          <div class="logo h1" style="font-size:58px">Seat'd</div>
+          <div class="sub" style="font-size:16px;margin-top:8px;max-width:280px">Book the table, pay upfront, walk past the queue. Nightlife without the chaos.</div>
+        </div>
+        <button class="btn" data-act="go-signup">Create account ${ic.arrow}</button>
+        <button class="btn ghost" style="margin-top:12px" data-act="login">I already have one</button>
+        <div class="micro" style="text-align:center">By continuing you agree to Seat'd's terms. You must be 18+.</div>
+      </div></div>`;
+  }
+  function signupScreen(){
+    const roles=[['user','Going out','Find clubs & book tables'],['club','I run a venue','List events, take bookings'],['admin','Platform admin','Approve clubs, oversee city']];
+    const ok=S.auth.name.trim().length>1;
+    return `${statusbar()}
+      <div class="topbar"><button class="back" data-act="auth-back">${ic.back}</button><div class="h2">Create account</div></div>
+      <div class="body enter"><div class="pad">
+        <div class="sub">Who are you on Seat'd?</div>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:14px">
+          ${roles.map(r=>`<div class="seg" style="margin:0"><div class="opt ${S.signupRole===r[0]?'on':''}" data-srole="${r[0]}" style="text-align:left;flex:1;display:flex;align-items:center;gap:12px">
+            <div style="width:34px;height:34px;border-radius:10px;background:rgba(255,61,174,.12);display:flex;align-items:center;justify-content:center;color:var(--magenta)">${r[0]==='user'?ic.user:r[0]==='club'?ic.store:ic.chart}</div>
+            <div><div class="t">${r[1]}</div><div class="d">${r[2]}</div></div></div></div>`).join('')}
+        </div>
+        <div class="field"><label>Full name</label><input class="input" id="f-name" placeholder="Your name" value="${esc(S.auth.name)}"></div>
+        <div class="field"><label>${S.signupRole==='club'?'Venue name':'Username'}</label><input class="input" id="f-handle" placeholder="${S.signupRole==='club'?'e.g. Cobalt Room':'@you'}" value="${esc(S.auth.handle)}"></div>
+        <div class="field"><label>Email</label><input class="input" id="f-email" placeholder="you@email.com" value="${esc(S.auth.email)}"></div>
+        <button class="btn" style="margin-top:22px" data-act="finish-signup" ${ok?'':'disabled'}>Create ${S.signupRole} account</button>
+        ${S.signupRole==='club'?`<div class="micro" style="text-align:center">Clubs go live once a Seat'd admin approves your venue.</div>`:''}
+      </div></div>`;
+  }
+
+  // ---------- USER: DISCOVER ----------
+  function discover(){
+    let list=venues.filter(v=>v.status==='live');
+    if(S.area!=='All') list=list.filter(v=>v.area===S.area);
+    if(S.nearMe) list=[...list].sort((a,b)=>a.dist-b.dist);
+    const cards=list.map(v=>`
+      <div class="card" data-venue="${v.id}">
+        <div class="cover">${cover(v)}
+          <span class="genre">${v.genre}</span><span class="when">${v.when}</span>
+          <div class="covtag"><div class="nm">${esc(v.name)}</div>
+            <div class="ar">${esc(v.area)}${S.nearMe?` - ${v.dist} km`:''}</div></div>
+        </div>
+        <div class="meta"><div class="row"><div class="sub" style="font-size:13px;max-width:200px">${esc(v.tagline)}</div>
+          <div class="pricefrom" style="text-align:right">from<br><b>${fmt(v.minFrom)}</b></div></div>${availabilityHTML(v.id)}</div>
+      </div>`).join('') || `<div class="empty">No clubs in ${S.area} tonight.<br>Try another area.</div>`;
+    return `${statusbar()}
+      <div class="body enter"><div class="pad">
+        <div class="eyebrow">Out tonight - Joburg</div><div class="h1">Where to,<br>${people.me.name.split(' ')[0]}?</div>
+        <div class="chips">${AREAS.map(a=>`<div class="chip ${S.area===a?'on':''}" data-area="${a}">${a}</div>`).join('')}</div>
+        <button class="locbtn ${S.nearMe?'on':''}" data-act="near">${ic.pin}${S.nearMe?'Sorted by distance from Sandton':'Sort by what\'s near me'}</button>
+        <div class="eyebrow" style="margin-top:18px;color:var(--teal)">Join an open table</div>
+        <div>${openPublicTables().filter(pt=>S.area==='All'||(venue(pt.vid)&&venue(pt.vid).area===S.area)).map(pt=>publicTableCard(pt,'join')).join('')||'<div class="meta2" style="margin-top:8px">No public tables open in this area yet.</div>'}</div>
+        <div class="eyebrow" style="margin-top:18px">Book your own table</div>
+        <div class="cards stagger">${cards}</div>
+      </div></div>${tabbar()}`;
+  }
+
+  function venuesMap(){
+    const live=venues.filter(v=>v.status==='live');
+    return `${statusbar()}<div class="body enter"><div class="pad">
+      <div class="h1" style="font-size:28px">Map</div>
+      <div class="mapwrap" style="margin-top:14px;height:240px;position:relative;background:linear-gradient(160deg,#100B17,#0B0710)">
+        <svg viewBox="0 0 340 230" width="100%" height="100%">
+          <path d="M20 120 H320 M170 20 V210 M60 60 L300 180" stroke="#241d30" stroke-width="2" fill="none"/>
+          ${live.map((v,i)=>{const x=50+(v.dist*9)%260,y=40+(i*38)%160;return`<g><circle class="ping" cx="${x}" cy="${y}" r="8" fill="${v.g[0]}"/><circle cx="${x}" cy="${y}" r="7" fill="${v.g[0]}"/><text x="${x+12}" y="${y+4}" font-family="Inter" font-size="10" font-weight="700" fill="#F5F0FA">${esc(v.name)}</text></g>`;}).join('')}
+          <circle cx="170" cy="120" r="6" fill="#fff"/><circle class="ping" cx="170" cy="120" r="6" fill="#fff"/>
+          <text x="170" y="146" text-anchor="middle" font-family="Inter" font-size="9" fill="#9A8FB0">You - Sandton</text>
+        </svg>
+      </div>
+      <div class="cards stagger" style="margin-top:16px">
+        ${live.sort((a,b)=>a.dist-b.dist).map(v=>`<div class="lrow" data-venue="${v.id}" style="border:1px solid var(--line);border-radius:16px;padding:13px 14px">
+          <div style="width:44px;height:44px;border-radius:12px;overflow:hidden;flex:none">${cover(v,44)}</div>
+          <div style="flex:1"><div class="nm">${esc(v.name)}</div><div class="meta2">${esc(v.area)} - ${v.dist} km - from ${fmt(v.minFrom)}</div></div>
+          <span style="color:var(--muted)">${ic.arrow}</span></div>`).join('')}
+      </div>
+    </div></div>${tabbar()}`;
+  }
+
+  // ---------- VENUE / BOOKING ----------
+  function venueScreen(){
+    const v=venue(S.venueId), tables=tablesFor(S.venueId);
+    const tEls=tables.map(t=>{const m=tierMeta[t.tier],sel=S.selTable===t.id;
+      const fill=t.booked?'#241d30':(sel?m.color:'rgba(255,255,255,.04)');const stroke=t.booked?'#3a3148':m.color;
+      const txtc=t.booked?'#5b5270':(sel?'#0B0710':m.color);
+      return `<g class="tbl ${t.booked?'booked':''} ${(!t.booked&&!sel)?'glow':''}" data-table="${t.booked?'':t.id}">
+        <rect x="${t.x}" y="${t.y}" width="${t.w}" height="${t.h}" rx="9" fill="${fill}" stroke="${stroke}" stroke-width="${sel?2.5:1.5}"></rect>
+        <text x="${t.x+t.w/2}" y="${t.y+t.h/2+4}" text-anchor="middle" font-family="Anton" font-size="13" fill="${txtc}">${t.id}</text></g>`;}).join('');
+    const sel=tables.find(t=>t.id===S.selTable);
+    const bar=sel?`<div class="bookbar"><div class="row" style="margin-bottom:12px"><div>
+        <div style="font-weight:700;font-size:16px">${tierMeta[sel.tier].label} - ${sel.id}</div>
+        <div class="sub" style="font-size:13px">Seats ${sel.seats} - min spend ${fmt(sel.min)}</div></div>
+        <div class="pill" style="background:${tierMeta[sel.tier].color};color:#0B0710">Selected</div></div>
+        <button class="btn" data-go="booking">Continue to payment</button></div>`
+      :`<div class="bookbar"><div class="sub" style="text-align:center;padding-bottom:6px">Tap an available table to book it</div></div>`;
+    return `${statusbar()}
+      <div style="position:relative"><div class="cover" style="height:118px">${cover(v,118)}
+        <button class="back" data-go="back-discover" style="position:absolute;top:8px;left:14px;z-index:5;background:rgba(11,7,16,.6)">${ic.back}</button>
+        <div class="covtag"><div class="nm" style="font-size:24px">${esc(v.name)}</div><div class="ar">${esc(v.area)} - ${esc(v.genre)}</div></div></div></div>
+      <div class="body"><div class="pad" style="padding-bottom:150px">
+        <div class="legend">
+          <span><i class="swatch" style="background:${tierMeta.vip.color}"></i>VIP</span>
+          <span><i class="swatch" style="background:${tierMeta.booth.color}"></i>Booth</span>
+          <span><i class="swatch" style="background:${tierMeta.std.color}"></i>Standard</span>
+          <span><i class="swatch" style="background:#241d30;border:1px solid #3a3148"></i>Booked</span></div>
+        <div class="mapwrap"><svg viewBox="0 0 340 360" width="100%">
+          <rect x="6" y="6" width="328" height="348" rx="20" fill="none" stroke="#2B2336" stroke-width="1.5"/>
+          <rect x="120" y="18" width="100" height="26" rx="8" fill="rgba(122,77,255,.18)" stroke="#7A4DFF"/><text x="170" y="35" text-anchor="middle" font-family="Anton" font-size="12" fill="#b9a6ff">DJ BOOTH</text>
+          <rect class="floorshimmer" x="92" y="110" width="156" height="160" rx="14" fill="url(#dance)"/><text x="170" y="195" text-anchor="middle" font-family="Anton" font-size="13" fill="rgba(245,240,250,.55)">DANCE FLOOR</text>
+          <rect x="300" y="250" width="28" height="96" rx="8" fill="rgba(43,212,255,.12)" stroke="#2BD4FF"/><text x="314" y="300" text-anchor="middle" font-family="Anton" font-size="11" fill="#9fe9ff" transform="rotate(90 314 300)">BAR</text>
+          <defs><linearGradient id="dance" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="rgba(255,61,174,.10)"/><stop offset="1" stop-color="rgba(43,212,255,.10)"/></linearGradient></defs>
+          ${tEls}</svg></div>
+      </div></div>${bar}`;
+  }
+  function bookingScreen(){
+    const t=tablesFor(S.venueId).find(x=>x.id===S.selTable),v=venue(S.venueId),m=bookingMath(t),entryTotal=m.entryTotal,total=m.chargeTotal,myShare=m.myShare, partySize=S.men+S.women, overLimit=(S.men+S.women)>t.seats;
+    return `${statusbar()}<div class="topbar"><button class="back" data-go="venue">${ic.back}</button>
+      <div><div class="venue-name h2" style="font-size:20px">${tierMeta[t.tier].label} - ${t.id}</div><div class="sub" style="font-size:12px">${esc(v.name)}</div></div></div>
+      <div class="body enter"><div class="pad" style="padding-bottom:130px">
+        <div class="eyebrow">Your party</div>
+        <div class="splitrow" style="margin-top:12px">
+          <div class="col"><div class="sub" style="font-size:12px;margin-bottom:10px">Guys</div>
+            <div class="stepper"><button data-step="men:-1" aria-label="Remove guy"><span aria-hidden="true">-</span></button><span class="val">${S.men}</span><button data-step="men:1" aria-label="Add guy"><span aria-hidden="true">+</span></button></div></div>
+          <div class="col"><div class="sub" style="font-size:12px;margin-bottom:10px">Girls</div>
+            <div class="stepper"><button data-step="women:-1" aria-label="Remove girl"><span aria-hidden="true">-</span></button><span class="val">${S.women}</span><button data-step="women:1" aria-label="Add girl"><span aria-hidden="true">+</span></button></div></div></div>
+        <div class="field"><label>Invite crew / split payment</label>
+          <div class="chips" style="padding-top:0">${S.friends.map(id=>{const p=people[id];return `<div class="invitechip ${S.invited.includes(id)?'on':''}" data-invite="${id}">${av(p,24)} ${esc(p.name.split(' ')[0])}</div>`;}).join('')}</div>
+          <div class="addfriend"><input class="input" id="friend-in" value="${esc(S.friendDraft)}" placeholder="Search friend by name or @handle"><button class="btn sm ghost" style="width:auto;padding:0 14px" data-act="add-friend-booking">Add</button></div>${friendSearchHTML(S.friendDraft,'booking')}
+          <div class="setrow" style="padding:12px 0 0;border:0"><div><div class="nm" style="font-size:14px">Ping everyone to pay</div><div class="meta2">Like Playtomic: you pay your share, friends get their own payment request.</div></div><div class="tog ${S.splitPay?'on':''}" data-act="toggle-split"><i></i></div></div></div>
+        <div class="promobox"><div class="row"><div><div class="nm" style="font-size:15px">Promoter code</div><div class="meta2">Tracks commission and gives the group priority.</div></div><span class="badge" style="background:rgba(255,194,75,.18);color:var(--gold)">${esc(S.promoterCode)}</span></div>
+          <input class="input" id="promo-in" style="margin-top:10px" value="${esc(S.promoterCode)}" placeholder="PROMO CODE"></div>
+        <div class="summary">
+          <div class="li"><span>Party composition</span><b>${S.men} guys / ${S.women} girls</b></div><div class="li"><span>Seats used</span><b style="color:${overLimit?'var(--warn)':'var(--txt)'}">${partySize}/${t.seats}</b></div>
+          <div class="li"><span>Table minimum spend</span><b>${fmt(t.min)}</b></div>
+          <div class="li"><span>Seat'd service charge (5%)</span><b>${fmt(m.fee)}</b></div>
+          <div class="li"><span>Group payable total</span><b>${fmt(total)}</b></div>
+          <div class="li"><span>Payment pings sent after you pay</span><b>${S.splitPay?S.invited.length:0}</b></div>
+          <div class="total"><span class="sub">${S.splitPay?'Your share today':'Total payable now'}</span><span class="amt">${fmt(myShare)}</span></div>
+          <div class="micro">Table minimum spend is charged upfront. Gender split is only for venue/crowd info. With split-pay, you only pay your own share now; invited friends get their own payment links for the rest. The prepaid minimum becomes bar credit for the table. Fully refunded if declined.</div></div>
+      </div></div>
+      <div class="bookbar"><button class="btn" data-go="pay" ${overLimit?'disabled':''}>${overLimit?'Too many guests for this table':'Continue to payment - '+fmt(myShare)}</button></div>`;
+  }
+  function payScreen(){
+    const t=tablesFor(S.venueId).find(x=>x.id===S.selTable),m=bookingMath(t),entryTotal=m.entryTotal,total=m.chargeTotal,myShare=m.myShare;
+    return `${statusbar()}<div class="topbar"><button class="back" data-go="booking">${ic.back}</button><div class="h2" style="font-size:20px">Payment</div></div>
+      <div class="body enter"><div class="pad" style="padding-bottom:130px">
+        <div class="field"><label>Card number</label><input class="input" value="4242 4242 4242 4242"></div>
+        <div class="splitrow"><div style="flex:1"><div class="field"><label>Expiry</label><input class="input" value="12 / 27"></div></div>
+          <div style="flex:1"><div class="field"><label>CVC</label><input class="input" value="123"></div></div></div>
+        <div class="field"><label>Name on card</label><input class="input" value="${esc(people.me.name)}"></div>
+        <div class="summary"><div class="li"><span>Minimum spend subtotal</span><b>${fmt(m.groupTotal)}</b></div><div class="li"><span>Seat'd service charge (5%)</span><b>${fmt(m.fee)}</b></div><div class="li"><span>Group total</span><b>${fmt(total)}</b></div><div class="li"><span>Split between</span><b>${m.splitCount} ${m.splitCount===1?'person':'people'}</b></div><div class="total"><span class="sub">You pay now</span><span class="amt">${fmt(myShare)}</span></div></div>
+        <div class="micro" style="margin-top:18px">Demo only - no real charge. In production this routes through a local processor (Paystack / Yoco), charges only your share now, sends friends their own payment links, and auto-refunds if declined.</div>
+      </div></div>
+      <div class="bookbar"><button class="btn gold" data-go="submit">Pay ${fmt(myShare)}</button></div>`;
+  }
+  function statusScreen(){
+    const r=S.requests.find(x=>x.id===S.activeReq); if(!r)return discover();
+    if(r.status==='pending') return `${statusbar()}<div class="body enter"><div class="center" style="flex:none;padding:28px 26px 10px"><div class="spinner"></div>
+      <div class="h2">Payment pings sent</div><div class="sub" style="max-width:260px">You paid ${fmt(r.paidNow||0)}. Friends were pinged to pay their own shares, then the club can approve the table.</div></div>
+      <div class="pad">${deadlineHTML(r,'client')}<div class="summary"><div class="li"><span>Paid</span><b>${paidCount(r)}</b></div><div class="li"><span>Still outstanding</span><b>${fmt(amountOutstanding(r))}</b></div><div class="li"><span>Group total</span><b>${fmt(r.total)}</b></div></div>${paymentRowsHTML(r,true)}
+      <div class="sub" style="font-size:12px;margin-top:18px;opacity:.75;text-align:center">Demo: tap Mark paid to simulate friends paying, or switch to <b style="color:var(--magenta)">Club</b> to approve.</div></div></div>${tabbar()}`;
+    if(r.status==='cancelled') return `${statusbar()}<div class="center enter"><div class="checkwrap" style="background:#241d30;border:1px solid var(--warn)"><span style="font-size:28px">20</span></div>
+      <div class="h2">Booking auto-cancelled</div><div class="sub" style="max-width:270px">Not everyone paid within 20 minutes. Any paid shares are refunded and the table is released.</div>
+      <button class="btn ghost" style="width:auto;padding:14px 26px;margin-top:18px" data-go="back-discover">Find another</button></div>${tabbar()}`;
+    if(r.status==='rejected') return `${statusbar()}<div class="center enter"><div class="checkwrap" style="background:#241d30;border:1px solid var(--warn)"><span style="font-size:32px">REFUND</span></div>
+      <div class="h2">Table declined</div><div class="sub" style="max-width:250px">${esc(r.venue)} couldn't fit ${r.table}. ${fmt(r.paidNow||r.total)} refunded to your card.</div>
+      <button class="btn ghost" style="width:auto;padding:14px 26px;margin-top:18px" data-go="back-discover">Find another</button></div>${tabbar()}`;
+    return `${statusbar()}<div class="body enter"><div class="center" style="flex:none;padding:24px 30px 6px">
+        <div class="checkwrap pop">${ic.check}</div><div class="h2" style="margin-top:14px">You're in</div><div class="sub">${esc(r.venue)} confirmed your table</div></div>
+      <div class="pass enter"><div class="head"><div class="row"><div class="covtag nm" style="font-size:22px;position:static">${esc(r.venue)}</div><span class="pill" style="background:${tierMeta[r.tier].color};color:#0B0710">${tierMeta[r.tier].label}</span></div>
+        <div class="sub" style="font-size:13px;margin-top:4px">Tonight 22:00 - entry until 01:00</div></div>
+        <div class="qr"><svg width="120" height="120" viewBox="0 0 120 120">${qr()}</svg></div>
+        <div class="det"><div><div class="k">Table</div><div class="v">${r.table}</div></div><div><div class="k">Party</div><div class="v">${r.men+r.women} guests</div></div>
+          <div><div class="k">You paid</div><div class="v">${fmt(r.paidNow||r.total)}</div></div><div><div class="k">Booking</div><div class="v">${r.code}</div></div></div></div>
+      <div class="bypass"><div class="ico">OK</div><div><div class="nm" style="font-size:14px">Queue bypass enabled</div><div class="meta2">Use the Seat'd lane. Door staff scan once, then your table opens.</div></div></div>
+      <div class="pad"><div class="micro" style="text-align:center">Show this at the door. ${fmt(r.min)} prepaid minimum spend is credited to your table tab.</div>${bookingShareBlock(r)}</div></div>${tabbar()}`;
+  }
+  function qr(){ let s='',v=7; for(let y=0;y<10;y++)for(let x=0;x<10;x++){v=(v*1103515245+12345)&0x7fffffff;if(v%3===0)s+=`<rect x="${10+x*10}" y="${10+y*10}" width="9" height="9" fill="#0B0710"/>`;}
+    return `<rect width="120" height="120" rx="14" fill="#F5F0FA"/>`+s+`<rect x="10" y="10" width="28" height="28" fill="none" stroke="#0B0710" stroke-width="4"/><rect x="82" y="10" width="28" height="28" fill="none" stroke="#0B0710" stroke-width="4"/><rect x="10" y="82" width="28" height="28" fill="none" stroke="#0B0710" stroke-width="4"/>`; }
+
+
+  function bookingLink(r){ return 'https://seatd.app/booking/'+encodeURIComponent(r.code||r.id); }
+  function shareMatchesHTML(raw,bookingId){
+    const hits=searchPeople(raw);
+    if(!hits.length) return `<div class="searchresults"><div class="hintrow">No close match found. Type a name or @handle, then press Send invite to create/send.</div></div>`;
+    return `<div class="searchresults">${hits.map(x=>`<div class="searchhit"><div>${av(x.p,34)}</div><div style="flex:1"><div class="who">${esc(x.p.name)}</div><div class="match">${esc(x.p.handle)} | ${x.label}</div></div><button class="btn sm" style="width:auto;padding:8px 10px" data-sendbooking="${bookingId}:${x.p.id}">Send invite</button></div>`).join('')}</div>`;
+  }
+  function bookingShareBlock(r){
+    const link=bookingLink(r);
+    return `<div class="sharebox" data-sharebooking="${r.id}">
+      <div class="row"><div><div class="eyebrow" style="color:var(--blue)">Share booking</div><div class="nm" style="font-size:15px">Send this table link</div><div class="meta2">Share by link or send a native Seat'd invite to another user.</div></div><span class="badge" style="background:rgba(43,212,255,.14);color:var(--blue)">REF ${esc(r.code||r.id)}</span></div>
+      <div class="sharelink"><input class="input" readonly value="${esc(link)}"><button class="btn sm ghost" style="width:auto;padding:0 14px" data-copybooking="${r.id}">Copy</button></div>
+      <div class="nativeinvite"><div class="field" style="margin-top:0"><label>Send directly to a user</label><input class="input" id="share-in-${r.id}" value="${esc(S.shareDraft||'')}" placeholder="Search name or @handle"></div>${shareMatchesHTML(S.shareDraft||'',r.id)}<button class="btn sm" style="margin-top:10px" data-sendbookingnew="${r.id}">Send invite</button>${S.shareSent===r.id?'<div class="toast">Invite sent inside Seat\'d.</div>':''}</div>
+    </div>`;
+  }
+
+  function publicOwnerBlock(r){
+    let pt=publicTableForBooking(r.id);
+    if(!pt){
+      return `<div class="publiccard"><div class="row"><div><div class="eyebrow" style="color:var(--teal)">Public table</div><div class="nm" style="font-size:16px">Open this table to other users?</div><div class="meta2">Set a join price. Approved joiners reduce the original group's effective cost.</div></div></div><button class="btn sm" style="margin-top:13px" data-makepublic="${r.id}">Make table public</button></div>`;
+    }
+    return publicTableCard(pt,'owner');
+  }
+
+  function myBookings(){
+    const mine=S.requests.filter(r=>r.who==='You' || (r.payments||[]).some(p=>p.id==='host'&&p.name===people.me.name));
+    const rows=mine.length?mine.map(r=>{
+      const paid=paidCount(r), outstanding=amountOutstanding(r), confirmed=r.status==='confirmed';
+      const statusLabel=r.status==='pending'?(allPaid(r)?'Ready for club':'Awaiting payments'):r.status==='confirmed'?'Confirmed':r.status==='cancelled'?'Cancelled':'Declined';
+      const statusColor=r.status==='confirmed'?'var(--ok)':r.status==='pending'?'var(--gold)':'var(--warn)';
+      return `<div class="req" data-bookingid="${r.id}">
+        <div class="row"><div><div class="nm" style="font-size:17px">${esc(r.venue)} - ${r.table}</div><div class="meta2">${tierMeta[r.tier].label} - ${r.men+r.women} guests - ref ${esc(r.code||r.id)}</div></div><span class="badge" style="background:rgba(255,255,255,.08);color:${statusColor}">${statusLabel}</span></div>
+        ${deadlineHTML(r,'client')}
+        <div class="summary" style="margin-top:14px"><div class="li"><span>Your payment</span><b>${fmt(r.paidNow||0)}</b></div><div class="li"><span>Group total</span><b>${fmt(r.total)}</b></div><div class="li"><span>Paid participants</span><b>${paid}</b></div><div class="li"><span>Outstanding</span><b>${fmt(outstanding)}</b></div><div class="li"><span>Recovered from public joiners</span><b>${fmt(tableCostRecovered(r))}</b></div><div class="li"><span>Booking reference</span><b>${esc(r.code||r.id)}</b></div></div>
+        ${paymentRowsHTML(r,r.status==='pending')}
+        ${r.status==='confirmed'?bookingShareBlock(r):''}
+        ${r.status==='confirmed'?publicOwnerBlock(r):''}
+        <div style="display:flex;gap:10px;margin-top:14px"><button class="btn sm ${confirmed?'':'ghost'}" style="flex:1" data-viewbooking="${r.id}">${confirmed?'Open pass':'Track booking'}</button></div>
+      </div>`;
+    }).join(''):`<div class="empty">No bookings yet.<br>Book a table and it will appear here with payment tracking and your reference.</div>`;
+    return `${statusbar()}<div class="body enter"><div class="pad"><div class="h1" style="font-size:28px">My<br>bookings</div><div class="sub" style="margin-top:6px">Track your table, who has paid, countdowns, and booking references.</div><div class="stagger" style="margin-top:16px">${rows}</div></div></div>${tabbar()}`;
+  }
+
+  function joinPayScreen(){
+    const aj=S.activeJoin||{};
+    const pt=S.publicTables.find(x=>x.id===aj.ptId);
+    if(!pt) return discover();
+    const gender=aj.gender==='female'?'female':'male';
+    const subtotal=publicJoinPrice(pt,gender);
+    const fee=serviceFee(subtotal);
+    const total=subtotal+fee;
+    return `${statusbar()}<div class="topbar"><button class="back" data-go="back-discover">${ic.back}</button><div><div class="h2" style="font-size:20px">Join table</div><div class="sub" style="font-size:12px">${esc(pt.venue)} · ${esc(pt.table)}</div></div></div>
+      <div class="body enter"><div class="pad" style="padding-bottom:130px">
+        <div class="publiccard"><div class="row"><div><div class="eyebrow" style="color:var(--teal)">Public table request</div><div class="nm" style="font-size:17px">Join as ${gender==='female'?'female':'male'}</div><div class="meta2">Owner approves your request after payment confirmation.</div></div><span class="badge" style="background:rgba(63,224,160,.15);color:var(--ok)">${publicSpotsOpen(pt)} seat${publicSpotsOpen(pt)===1?'':'s'} open</span></div></div>
+        <div class="field"><label>Card number</label><input class="input" value="4242 4242 4242 4242"></div>
+        <div class="splitrow"><div style="flex:1"><div class="field"><label>Expiry</label><input class="input" value="12 / 27"></div></div>
+          <div style="flex:1"><div class="field"><label>CVC</label><input class="input" value="123"></div></div></div>
+        <div class="summary"><div class="li"><span>Join price</span><b>${fmt(subtotal)}</b></div><div class="li"><span>Seat'd service charge (5%)</span><b>${fmt(fee)}</b></div><div class="total"><span class="sub">You pay now</span><span class="amt">${fmt(total)}</span></div></div>
+      </div></div><div class="bookbar"><button class="btn gold" data-act="confirm-joinpay">Pay ${fmt(total)}</button></div>`;
+  }
+
+  // ---------- MESSAGES + FRIENDS ----------
+  function messages(){
+    if(S.screen==='chat') return chatScreen();
+    if(S.screen==='friends') return friendsScreen();
+    const convos=S.friends.filter(id=>S.convos[id]).map(id=>{const p=people[id],last=S.convos[id][S.convos[id].length-1];
+      return `<div class="lrow" data-chat="${id}">${av(p)}<div style="flex:1"><div class="row"><span class="nm">${esc(p.name)}</span></div>
+        <div class="meta2" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:230px">${last.f==='me'?'You: ':''}${esc(last.t)}</div></div></div>`;}).join('')
+      || `<div class="empty">No messages yet.<br>Add friends to start a thread.</div>`;
+    return `${statusbar()}<div class="body enter"><div class="pad">
+      <div class="row"><div class="h1" style="font-size:28px">Messages</div>
+        <button class="btn sm ghost" style="width:auto;padding:10px 14px" data-act="friends">Friends - ${S.friends.length}</button></div>
+      <div class="stagger" style="margin-top:8px">${convos}</div></div></div>${tabbar()}`;
+  }
+  function friendsScreen(){
+    const fr=S.friends.map(id=>{const p=people[id];return `<div class="lrow">${av(p)}<div style="flex:1"><div class="nm">${esc(p.name)}</div><div class="meta2">${p.handle}${p.online?' - online':''}</div></div>
+      <button class="btn sm" style="width:auto;padding:9px 14px" data-chat="${id}">Message</button></div>`;}).join('');
+    const suggest=Object.values(people).filter(p=>p.id!=='me'&&!S.friends.includes(p.id)).map(p=>`<div class="lrow">${av(p)}
+      <div style="flex:1"><div class="nm">${esc(p.name)}</div><div class="meta2">${p.handle}</div></div>
+      <button class="btn sm ghost" style="width:auto;padding:9px 14px" data-add="${p.id}">Add</button></div>`).join('')||`<div class="sub" style="padding:14px 0">You've added everyone.</div>`;
+    return `${statusbar()}<div class="topbar"><button class="back" data-act="msg-back">${ic.back}</button><div class="h2">Friends</div></div>
+      <div class="body enter"><div class="pad">
+        <input class="input" id="friend-in" value="${esc(S.friendDraft)}" placeholder="Search people by name or @handle">
+        <div class="addfriend"><button class="btn sm" style="width:100%;padding:13px 14px" data-act="add-friend-booking">Add typed name as new friend</button></div>${friendSearchHTML(S.friendDraft,'friends')}
+        <div class="eyebrow" style="margin-top:20px">Your crew</div><div>${fr}</div>
+        <div class="eyebrow" style="margin-top:22px">Suggested</div><div>${suggest}</div></div></div>`;
+  }
+  function chatScreen(){
+    const p=people[S.activeChat],msgs=S.convos[S.activeChat]||[];
+    return `${statusbar()}<div class="topbar"><button class="back" data-act="chat-back">${ic.back}</button>${av(p,38)}
+      <div><div class="nm" style="font-weight:700">${esc(p.name)}</div><div class="meta2" style="font-size:12px">${p.online?'online':'offline'}</div></div></div>
+      <div class="chatbody">${msgs.map(m=>`<div class="bub ${m.f} pop">${esc(m.t)}</div>`).join('')}</div>
+      <div class="composer"><input id="msg-in" placeholder="Message ${esc(p.name.split(' ')[0])}..."><button class="send" data-act="send">${ic.arrow}</button></div>`;
+  }
+
+  // ---------- PROFILE ----------
+  function profile(){
+    const m=people.me;
+    return `${statusbar()}<div class="body enter">
+      <div class="phero"><div style="display:flex;justify-content:center;margin-bottom:14px">${av(m,88)}</div>
+        <div class="h2" style="font-size:24px">${esc(m.name)}</div><div class="sub">${m.handle} - Sandton</div>
+        <div class="sub" style="max-width:260px;margin:8px auto 0">${esc(m.bio)}</div>
+        <button class="btn sm ghost" style="width:auto;padding:10px 18px;margin:16px auto 0" data-act="edit">${ic.pencil} Edit profile</button>
+        <div class="pstats"><div class="b"><div class="n">${m.nights}</div><div class="l">Nights out</div></div>
+          <div class="b"><div class="n">${m.tables}</div><div class="l">Tables</div></div>
+          <div class="b"><div class="n">${m.crew}</div><div class="l">Crew</div></div></div>
+        <div class="promobox" style="text-align:left"><div class="row"><div><div class="nm">Promoter mode</div><div class="meta2">Share your link and earn 8% on prepaid entry fees.</div></div><span class="badge" style="background:rgba(255,194,75,.18);color:var(--gold)">${esc(S.promoterCode)}</span></div></div></div>
+      <div class="pad">
+        <div class="setrow"><div><div class="nm" style="font-size:15px">Going out tonight</div><div class="meta2">Let your crew see you're out</div></div>
+          <div class="tog ${m.out?'on':''}" data-act="toggle-out"><i></i></div></div>
+        <div class="setrow" data-act="my-bookings" style="cursor:pointer"><div class="nm" style="font-size:15px">My bookings</div><span style="color:var(--muted)">${ic.arrow}</span></div>
+        <div class="setrow"><div class="nm" style="font-size:15px">Payment methods</div><span style="color:var(--muted)">${ic.arrow}</span></div>
+        <div class="setrow"><div class="nm" style="font-size:15px">Notifications</div><span style="color:var(--muted)">${ic.arrow}</span></div>
+        <button class="btn ghost" style="margin-top:20px" data-act="logout">Log out</button>
+      </div></div>${tabbar()}`;
+  }
+  function editProfile(){
+    const m=people.me;
+    return `${statusbar()}<div class="topbar"><button class="back" data-act="prof-back">${ic.back}</button><div class="h2">Edit profile</div></div>
+      <div class="body enter"><div class="pad">
+        <div style="display:flex;justify-content:center;margin:6px 0 4px">${av(m,84)}</div>
+        <div style="text-align:center"><button class="btn sm ghost" style="width:auto;padding:8px 16px">Change photo</button></div>
+        <div class="field"><label>Name</label><input class="input" id="e-name" value="${esc(m.name)}"></div>
+        <div class="field"><label>Username</label><input class="input" id="e-handle" value="${esc(m.handle)}"></div>
+        <div class="field"><label>Bio</label><textarea class="input" id="e-bio" rows="3">${esc(m.bio)}</textarea></div>
+        <button class="btn" style="margin-top:22px" data-act="save-profile">Save changes</button>
+      </div></div>`;
+  }
+
+  function tabbar(){
+    const t=(id,icon,label,n)=>`<div class="tab ${S.tab===id?'on':''}" data-tab="${id}"><span class="dot"></span>
+      <div class="pos">${icon}${n?`<span class="badge-n">${n}</span>`:''}</div><span>${label}</span></div>`;
+    const myReq=S.requests.filter(r=>r.who==='You'&&r.status==='confirmed').length;
+    return `<div class="tabbar">${t('discover',ic.bolt,'Tonight')}${t('map',ic.map,'Map')}${t('bookings',ic.ticket,'Bookings',myReq||'')}${t('messages',ic.chat,'Chats',1)}${t('profile',ic.user,'Profile')}</div>`;
+  }
+
+  // ---------- CLUB (venue host) ----------
+  // My Venue tab removed: club hosts now use Requests + Insights only in this prototype.
+  function clubView(){
+    if(S.tab==='studio') S.tab='requests';
+    if(S.tab==='insights') return clubInsights();
+    return clubRequests();
+  }
+  function clubTabbar(){ const t=(id,icon,label,n)=>`<div class="tab ${S.tab===id?'on':''}" data-tab="${id}"><span class="dot"></span><div class="pos">${icon}${n?`<span class="badge-n">${n}</span>`:''}</div><span>${label}</span></div>`;
+    const pend=S.requests.filter(r=>r.status==='pending').length;
+    return `<div class="tabbar">${t('requests',ic.ticket,'Requests',pend||'')}${t('insights',ic.chart,'Insights')}</div>`; }
+  function clubRequests(){
+    const selected=S.clubRequestVenueId||'all';
+    const v=selected==='all'?null:venue(selected);
+    const venueRequests=S.requests.filter(r=>selected==='all'||r.vid===selected);
+    const pend=venueRequests.filter(r=>r.status==='pending'),conf=venueRequests.filter(r=>r.status==='confirmed');
+    const rev=conf.reduce((a,r)=>a+r.total,0);
+    const cards=pend.length?pend.map(r=>{const ready=allPaid(r);return `<div class="req"><div class="row"><div><div class="nm" style="font-size:17px">${esc(r.who||'New guest')}</div>
+        <div class="meta2" style="font-size:12px">${r.t||'just now'} - ${esc(r.venue)}</div></div><span class="badge" style="background:${ready?'rgba(63,224,160,.15)':'rgba(255,194,75,.15)'};color:${ready?'var(--ok)':'var(--gold)'}">${ready?'READY TO APPROVE':'COLLECTING PAYMENTS'}</span></div>
+      ${deadlineHTML(r,'club')}
+      <div class="sub" style="font-size:14px;margin-top:12px;color:var(--txt)">${tierMeta[r.tier].label} <b>${r.table}</b> - ${r.men} guys + ${r.women} girls</div>
+      <div class="sub" style="font-size:13px;margin-top:4px">Total booking <b style="color:var(--txt)">${fmt(r.total)}</b> - outstanding ${fmt(amountOutstanding(r))}</div>
+      <div class="sub" style="font-size:12px;margin-top:4px">${r.splitPay?'Split-pay active':'Paid by host'} - ${paidCount(r)} paid - promoter ${r.promo||'-'}</div>
+      ${paymentRowsHTML(r,false)}
+      <div class="actions"><button class="btn ghost sm" data-rej="${r.id}">Decline</button><button class="btn sm" data-acc="${r.id}" ${ready?'':'disabled'}>Approve</button></div></div>`}).join('')
+      :`<div class="empty">No requests waiting.<br>Paid table requests land here for one-tap approval.</div>`;
+    return `${statusbar()}<div class="body enter"><div class="pad">
+      <div class="eyebrow" style="color:var(--blue)">${v?esc(v.name):'All clubs'} - door</div><div class="h1" style="font-size:30px">Tonight's<br>requests</div>
+      ${clubRequestSelectorHTML()}
+      <div class="stat"><div class="box"><div class="n">${pend.length}</div><div class="l">Waiting</div></div>
+        <div class="box"><div class="n">${conf.length}</div><div class="l">Confirmed</div></div>
+        <div class="box"><div class="n">${fmt(rev)}</div><div class="l">Prepaid</div></div></div>
+      <div class="stagger">${cards}</div></div></div>${clubTabbar()}`;
+  }
+  function studio(){
+    const v=clubVenue();
+    return `${statusbar()}<div class="body enter"><div class="pad">
+      <div class="row"><div class="h1" style="font-size:28px">My venue</div><span class="badge" style="background:rgba(63,224,160,.14);color:var(--ok)">${v.status==='pending'?'PENDING':'LIVE'}</span></div>
+      ${clubSelectorHTML()}
+      <div class="sub">This is exactly how guests see the selected club. Edit below - it updates instantly.</div>
+      <div class="studio-prev" style="margin-top:14px"><div class="cover">${cover(v)}<span class="genre">${v.genre}</span>
+        <div class="covtag"><div class="nm">${esc(v.name)}</div><div class="ar">${esc(v.area)}</div></div></div>
+        <div class="meta"><div class="sub" style="font-size:13px">${esc(v.tagline)}</div></div></div>
+      <div class="field"><label>Venue name</label><input class="input" id="s-name" value="${esc(v.name)}"></div>
+      <div class="field"><label>Tagline</label><input class="input" id="s-tag" value="${esc(v.tagline)}"></div>
+      <div class="field"><label>Music / genre</label><input class="input" id="s-genre" value="${esc(v.genre)}"></div>
+      <div class="field"><label>Area</label><div class="chips" style="padding-top:0">${AREAS.slice(1).map(a=>`<div class="chip ${v.area===a?'on':''}" data-sarea="${a}">${a}</div>`).join('')}</div></div>
+      <div class="field"><label>Cover style</label><div class="stylepick">
+        ${COVERS.map(st=>`<div class="styleopt ${v.style===st?'on':''}" data-sstyle="${st}">${styleSwatch(st,v.g)}</div>`).join('')}</div></div>
+      <div class="field"><label>Door pricing (entry per guest)</label>
+        <div class="splitrow"><div class="col"><div class="sub" style="font-size:12px;margin-bottom:8px">Standard - guys</div><input class="input" id="p-m" value="150"></div>
+          <div class="col"><div class="sub" style="font-size:12px;margin-bottom:8px">Standard - girls</div><input class="input" id="p-w" value="100"></div></div></div>
+      <button class="btn" style="margin-top:20px" data-act="save-venue">Save & publish</button>
+      <div class="micro" style="text-align:center">In production, "cover style" becomes upload-your-own photos and a full table-layout editor.</div>
+    </div></div>${clubTabbar()}`;
+  }
+  function clubInsights(){
+    const v=clubVenue();
+    const reqs=S.requests.filter(r=>r.vid===v.id);
+    const confirmed=reqs.filter(r=>r.status==='confirmed');
+    const pending=reqs.filter(r=>r.status==='pending');
+    const declined=reqs.filter(r=>r.status==='rejected');
+    const prepaid=confirmed.reduce((a,r)=>a+(Number(r.total)||0),0);
+    const barCredit=confirmed.reduce((a,r)=>a+(Number(r.min)||0),0);
+    const entryRevenue=confirmed.reduce((a,r)=>a+Math.max(0,(Number(r.total)||0)-(Number(r.min)||0)),0);
+    const guests=confirmed.reduce((a,r)=>a+(Number(r.men)||0)+(Number(r.women)||0),0);
+    const guys=confirmed.reduce((a,r)=>a+(Number(r.men)||0),0);
+    const girls=confirmed.reduce((a,r)=>a+(Number(r.women)||0),0);
+    const avgParty=confirmed.length?(guests/confirmed.length).toFixed(1):'0.0';
+    const guyPct=guests?Math.round(guys/guests*100):0;
+    const girlPct=guests?100-guyPct:0;
+    const tables=tablesFor(v.id);
+    const prepaidPct=tables.length?Math.round(confirmed.length/tables.length*100):0;
+    const scans=guests;
+    const commission=Math.round(prepaid*0.05);
+    const byPromo={};
+    confirmed.forEach(r=>{const k=(r.promo||'DIRECT').toUpperCase(); if(!byPromo[k])byPromo[k]={bookings:0,total:0}; byPromo[k].bookings++; byPromo[k].total+=Number(r.total)||0;});
+    const promos=Object.entries(byPromo).sort((a,b)=>b[1].total-a[1].total).slice(0,3);
+    const bars=[12,18,25,33,45,confirmed.length*18+pending.length*8+20,Math.max(10,confirmed.length*14+30)];
+    const days=['M','T','W','T','F','S','S'];
+    return `${statusbar()}<div class="body enter"><div class="pad">
+      <div class="h1" style="font-size:28px">Insights</div><div class="sub">${esc(v.name)} - live from approved transactions</div>${clubSelectorHTML()}
+      <div class="stat"><div class="box"><div class="n">${prepaidPct}%</div><div class="l">Tables prepaid</div></div>
+        <div class="box"><div class="n">${pending.length}</div><div class="l">Waiting</div></div>
+        <div class="box"><div class="n">${fmt(prepaid)}</div><div class="l">Tonight</div></div></div>
+      <div class="eyebrow" style="margin-top:24px">Bookings by night</div>
+      <div style="display:flex;align-items:flex-end;gap:10px;height:140px;margin-top:14px">
+        ${bars.map((b,i)=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;justify-content:flex-end;height:100%">
+          <div style="width:100%;height:${Math.min(100,b)}%;border-radius:8px 8px 0 0;background:linear-gradient(180deg,var(--magenta),var(--violet))" class="enter"></div>
+          <span class="meta2" style="font-size:11px">${days[i]}</span></div>`).join('')}</div>
+      <div class="eyebrow" style="margin-top:24px">Crowd split</div>
+      <div class="summary"><div class="li"><span>Guys</span><b>${guyPct}% (${guys})</b></div><div class="li"><span>Girls</span><b>${girlPct}% (${girls})</b></div>
+        <div class="li"><span>Avg party size</span><b>${avgParty}</b></div><div class="li"><span>Declined requests</span><b>${declined.length}</b></div></div>
+      <div class="eyebrow" style="margin-top:24px">Spend tracking</div>
+      <div class="summary"><div class="minirow"><span>Prepaid bar credit tonight</span><b>${fmt(barCredit)}</b></div><div class="minirow"><span>Entry revenue tonight</span><b>${fmt(entryRevenue)}</b></div><div class="minirow"><span>Queue bypass scans</span><b>${scans}</b></div><div class="minirow"><span>Promoter commission owed</span><b>${fmt(commission)}</b></div></div>
+      <div class="eyebrow" style="margin-top:24px">Top promoters</div>
+      <div class="summary">${promos.length?promos.map(([k,d])=>`<div class="minirow"><span>${esc(k)}</span><b>${d.bookings} booking${d.bookings===1?'':'s'} - ${fmt(Math.round(d.total*0.05))}</b></div>`).join(''):`<div class="minirow"><span>No approved promoter bookings yet</span><b>R0</b></div>`}</div>
+      <div class="micro">Approve or decline requests in the Requests tab and these figures update instantly.</div>
+    </div></div>${clubTabbar()}`;
+  }
+
+  // ---------- ADMIN ----------
+  function adminView(){
+    if(S.tab==='overview') return adminOverview();
+    return adminClubs();
+  }
+  function adminTabbar(){ const t=(id,icon,label,n)=>`<div class="tab ${S.tab===id?'on':''}" data-tab="${id}"><span class="dot"></span><div class="pos">${icon}${n?`<span class="badge-n">${n}</span>`:''}</div><span>${label}</span></div>`;
+    return `<div class="tabbar">${t('clubs',ic.store,'Clubs',S.pendingClubs.length||'')}${t('overview',ic.chart,'Overview')}</div>`; }
+  function adminClubs(){
+    const pend=S.pendingClubs.map(v=>`<div class="req"><div class="row"><div style="display:flex;gap:12px;align-items:center">
+        <div style="width:46px;height:46px;border-radius:12px;overflow:hidden">${cover(v,46)}</div>
+        <div><div class="nm" style="font-size:17px">${esc(v.name)}</div><div class="meta2" style="font-size:12px">by ${esc(v.applicant||'applicant')} - ${v.area}</div></div></div>
+        <span class="badge" style="background:rgba(255,194,75,.15);color:var(--gold)">REVIEW</span></div>
+      <div class="sub" style="font-size:13px;margin-top:10px">${v.genre} - ${esc(v.tagline)}</div>
+      <div class="actions"><button class="btn ghost sm" data-creject="${v.id}">Reject</button><button class="btn sm" data-capprove="${v.id}">Approve & list</button></div></div>`).join('')
+      ||`<div class="empty">No clubs awaiting review.<br>New venue applications appear here.</div>`;
+    return `${statusbar()}<div class="body enter"><div class="pad">
+      <div class="eyebrow" style="color:var(--blue)">Seat'd - Joburg ops</div><div class="h1" style="font-size:30px">Club<br>applications</div>
+      <div class="stagger">${pend}</div>
+      <div class="eyebrow" style="margin-top:26px">Live venues</div>
+      ${venues.filter(v=>v.status==='live').map(v=>`<div class="lrow"><div style="width:40px;height:40px;border-radius:11px;overflow:hidden;flex:none">${cover(v,40)}</div>
+        <div style="flex:1"><div class="nm">${esc(v.name)}</div><div class="meta2">${v.area} - ${v.genre}</div></div>
+        <span class="badge" style="background:rgba(63,224,160,.14);color:var(--ok)">LIVE</span></div>`).join('')}
+    </div></div>${adminTabbar()}`;
+  }
+  function adminOverview(){
+    return `${statusbar()}<div class="body enter"><div class="pad">
+      <div class="h1" style="font-size:28px">Overview</div>
+      <div class="stat"><div class="box"><div class="n">${venues.filter(v=>v.status==='live').length}</div><div class="l">Live clubs</div></div>
+        <div class="box"><div class="n">${S.pendingClubs.length}</div><div class="l">Pending</div></div>
+        <div class="box"><div class="n">2.4k</div><div class="l">Users</div></div></div>
+      <div class="stat"><div class="box"><div class="n">318</div><div class="l">Tables / wk</div></div>
+        <div class="box"><div class="n">R612k</div><div class="l">GMV / mo</div></div>
+        <div class="box"><div class="n">R49k</div><div class="l">Take / mo</div></div></div>
+      <div class="eyebrow" style="margin-top:24px">Cities</div>
+      <div class="summary"><div class="li"><span>Johannesburg</span><b>Live</b></div><div class="li"><span>Cape Town</span><b style="color:var(--gold)">Launching</b></div>
+        <div class="li"><span>Durban</span><b style="color:var(--muted)">Waitlist</b></div></div>
+      <div class="micro">City launch fees & exclusivity windows are in the long-term revenue plan.</div>
+    </div></div>${adminTabbar()}`;
+  }
+
+  // ---------- ROUTER ----------
+  function inner(){
+    if(!S.role) return authView();
+    if(S.role==='club') return clubView();
+    if(S.role==='admin') return adminView();
+    // user
+    if(S.screen==='venue') return venueScreen();
+    if(S.screen==='booking') return bookingScreen();
+    if(S.screen==='pay') return payScreen();
+    if(S.screen==='joinpay') return joinPayScreen();
+    if(S.screen==='status') return statusScreen();
+    if(S.screen==='editprofile') return editProfile();
+    if(S.tab==='bookings') return myBookings();
+    if(S.tab==='discover') return discover();
+    if(S.tab==='map') return venuesMap();
+    if(S.tab==='messages') return messages();
+    if(S.tab==='profile') return profile();
+    return discover();
+  }
+  function roleLabel(){ return S.role?S.role[0].toUpperCase()+S.role.slice(1):'Guest'; }
+  function render(){
+    refreshExpiries();
+    root.innerHTML=`<div class="stage">
+      <div class="roleswitch">
+        <button class="${S.role==='user'?'on':''}" data-setrole="user">User</button>
+        <button class="${S.role==='club'?'on':''}" data-setrole="club">Club</button>
+        <button class="${S.role==='admin'?'on':''}" data-setrole="admin">Admin</button>
+      </div>
+      <div class="hint">${S.role?`Viewing as <b>${roleLabel()}</b>. Book in <b>User</b>, approve in <b>Club</b>, list venues in <b>Admin</b> - they're connected.`:`Sign up, or jump straight in with the role switcher above.`}</div>
+      <div class="phone"><div class="screen">${inner()}</div></div>
+    </div>`;
+    if(!S.splashDone && !S.role){ setTimeout(()=>{S.splashDone=true;},1700); }
+    bind();
+    const cb=root.querySelector('.chatbody'); if(cb) cb.scrollTop=cb.scrollHeight;
+  }
+
+  // ---------- BIND ----------
+  function setRole(r){ S.role=r; S.screen='home';
+    S.tab = r==='club'?'requests' : r==='admin'?'clubs' : 'discover'; render(); }
+  function bind(){
+    // Robust delegated click handler for the club/admin controls.
+    // This keeps menus clickable even when nested SVGs/text inside the button are tapped.
+    if(root._seatdClubClickHandler){
+      root.removeEventListener('click', root._seatdClubClickHandler, true);
+    }
+    root._seatdClubClickHandler=function(e){
+      const hit=(sel)=>e.target.closest(sel);
+      let el;
+      if((el=hit('[data-clubselect]'))){ e.preventDefault(); e.stopPropagation(); S.clubVenueId=el.dataset.clubselect; render(); return; }
+      if((el=hit('[data-clubreq]'))){ e.preventDefault(); e.stopPropagation(); S.clubRequestVenueId=el.dataset.clubreq; render(); return; }
+      if((el=hit('[data-sarea]'))){ e.preventDefault(); e.stopPropagation(); clubVenue().area=el.dataset.sarea; render(); return; }
+      if((el=hit('[data-sstyle]'))){ e.preventDefault(); e.stopPropagation(); clubVenue().style=el.dataset.sstyle; render(); return; }
+      if((el=hit('[data-clubtab]'))){ e.preventDefault(); e.stopPropagation(); S.tab=el.dataset.clubtab; S.screen='home'; render(); return; }
+      if((el=hit('[data-tab]')) && (S.role==='club'||S.role==='admin')){ e.preventDefault(); e.stopPropagation(); S.tab=el.dataset.tab; S.screen='home'; render(); return; }
+      if((el=hit('[data-acc]'))){ e.preventDefault(); e.stopPropagation(); decide(el.dataset.acc,'confirmed'); return; }
+      if((el=hit('[data-rej]'))){ e.preventDefault(); e.stopPropagation(); decide(el.dataset.rej,'rejected'); return; }
+      if((el=hit('[data-capprove]'))){ e.preventDefault(); e.stopPropagation(); approveClub(el.dataset.capprove); return; }
+      if((el=hit('[data-creject]'))){ e.preventDefault(); e.stopPropagation(); S.pendingClubs=S.pendingClubs.filter(v=>v.id!==el.dataset.creject); render(); return; }
+      if((el=hit('[data-act="save-venue"]'))){ e.preventDefault(); e.stopPropagation(); act('save-venue',el); return; }
+    };
+    root.addEventListener('click', root._seatdClubClickHandler, true);
+    const q=(s,f)=>root.querySelectorAll(s).forEach(f);
+    q('[data-setrole]',b=>b.onclick=()=>setRole(b.dataset.setrole));
+    q('[data-act]',b=>b.onclick=()=>act(b.dataset.act,b));
+    q('[data-srole]',b=>b.onclick=()=>{S.signupRole=b.dataset.srole;captureSignup();render();});
+    q('[data-venue]',b=>b.onclick=()=>{S.venueId=b.dataset.venue;S.selTable=null;S.screen='venue';render();});
+    q('.tbl[data-table]',g=>{if(g.dataset.table)g.onclick=()=>{S.selTable=g.dataset.table;render();};});
+    q('[data-go]',b=>b.onclick=()=>go(b.dataset.go));
+    q('[data-clubtab]',t=>t.onclick=()=>{S.tab=t.dataset.clubtab;S.screen='home';render();});
+    q('[data-tab]',t=>t.onclick=()=>{S.tab=(t.dataset.tab==='studio'?'requests':t.dataset.tab);S.screen='home';render();});
+    q('[data-step]',b=>b.onclick=()=>{const[k,d]=b.dataset.step.split(':');const nv=S[k]+parseInt(d);const t=S.venueId&&S.selTable?tablesFor(S.venueId).find(x=>x.id===S.selTable):null;const total=(k==='men'?nv+S.women:nv+S.men);if(nv>=0&&total>=1&&(!t||total<=t.seats)){S[k]=nv;}render();});
+    q('[data-acc]',b=>b.onclick=()=>decide(b.dataset.acc,'confirmed'));
+    q('[data-rej]',b=>b.onclick=()=>decide(b.dataset.rej,'rejected'));
+    q('[data-chat]',b=>b.onclick=()=>{S.activeChat=b.dataset.chat;S.tab='messages';S.screen='chat';render();});
+    q('[data-add]',b=>b.onclick=()=>{if(!S.friends.includes(b.dataset.add))S.friends.push(b.dataset.add);render();});
+    q('[data-addsearch]',b=>b.onclick=()=>{const id=b.dataset.addsearch;if(!S.friends.includes(id))S.friends.push(id);if(b.dataset.context==='booking'&&!S.invited.includes(id))S.invited.push(id);S.friendDraft='';render();});
+    q('[data-payfriend]',b=>b.onclick=()=>{const card=b.closest('[data-bookingid]'); const r=S.requests.find(x=>x.id===S.activeReq)||S.requests.find(x=>card&&x.id===card.dataset.bookingid); if(r&&r.payments){const p=r.payments.find(x=>x.id===b.dataset.payfriend); if(p)p.status='paid';} render();});
+    q('[data-viewbooking]',b=>b.onclick=()=>{S.activeReq=b.dataset.viewbooking;S.screen='status';render();});
+    q('[data-makepublic]',b=>b.onclick=()=>makePublic(b.dataset.makepublic));
+    q('[data-savepubprice]',b=>b.onclick=()=>savePublicPrice(b.dataset.savepubprice));
+    q('[data-joinpublic]',b=>b.onclick=()=>requestJoinPublic(b.dataset.joinpublic));
+    q('[data-approvejoin]',b=>b.onclick=()=>decideJoin(b.dataset.approvejoin,true));
+    q('[data-denyjoin]',b=>b.onclick=()=>decideJoin(b.dataset.denyjoin,false));
+    q('[data-invite]',b=>b.onclick=()=>{const id=b.dataset.invite; S.invited=S.invited.includes(id)?S.invited.filter(x=>x!==id):S.invited.concat(id); render();});
+
+    q('[data-copybooking]',b=>b.onclick=()=>{S.shareSent=b.dataset.copybooking; render();});
+    q('[data-sendbooking]',b=>b.onclick=()=>sendBookingInvite(b.dataset.sendbooking));
+    q('[data-sendbookingnew]',b=>b.onclick=()=>sendBookingInvite(b.dataset.sendbookingnew+':new'));
+    root.querySelectorAll('[id^="share-in-"]').forEach(inp=>{inp.oninput=e=>{S.shareDraft=e.target.value; const card=inp.closest('[data-sharebooking]'); const box=card&&card.querySelector('.searchresults'); if(box) box.outerHTML=shareMatchesHTML(S.shareDraft, card.dataset.sharebooking); bind();}; inp.onkeydown=e=>{if(e.key==='Enter'){const card=inp.closest('[data-sharebooking]'); if(card)sendBookingInvite(card.dataset.sharebooking+':new');}};});
+
+    q('[data-area]',b=>b.onclick=()=>{S.area=b.dataset.area;render();});
+    q('[data-sarea]',b=>b.onclick=()=>{clubVenue().area=b.dataset.sarea;render();});
+    q('[data-sstyle]',b=>b.onclick=()=>{clubVenue().style=b.dataset.sstyle;render();});
+    q('[data-clubselect]',b=>b.onclick=()=>{S.clubVenueId=b.dataset.clubselect;render();});
+    q('[data-clubreq]',b=>b.onclick=()=>{S.clubRequestVenueId=b.dataset.clubreq;render();});
+    q('[data-capprove]',b=>b.onclick=()=>approveClub(b.dataset.capprove));
+    q('[data-creject]',b=>b.onclick=()=>{S.pendingClubs=S.pendingClubs.filter(v=>v.id!==b.dataset.creject);render();});
+    const fi=root.querySelector('#friend-in'); if(fi){fi.oninput=e=>{S.friendDraft=e.target.value; const box=root.querySelector('.searchresults'); if(box) box.outerHTML=friendSearchHTML(S.friendDraft, S.screen==='booking'?'booking':'friends'); bind();}; fi.onkeydown=e=>{if(e.key==='Enter')addFriendFromInput();};}
+    const mi=root.querySelector('#msg-in'); if(mi) mi.onkeydown=e=>{if(e.key==='Enter')send();};
+  }
+  function captureSignup(){ const n=root.querySelector('#f-name'),h=root.querySelector('#f-handle'),e=root.querySelector('#f-email');
+    if(n)S.auth.name=n.value; if(h)S.auth.handle=h.value; if(e)S.auth.email=e.value; }
+  function act(a,el){
+    if(a==='confirm-joinpay'){confirmJoinPayment();return;}
+    if(a==='go-signup'){S.screen='signup';render();return;}
+    if(a==='login'){setRole('user');return;}
+    if(a==='auth-back'){S.screen='home';render();return;}
+    if(a==='finish-signup'){captureSignup();
+      if(S.auth.name)people.me.name=S.auth.name;
+      if(S.signupRole==='user'&&S.auth.handle)people.me.handle=S.auth.handle.startsWith('@')?S.auth.handle:'@'+S.auth.handle;
+      if(S.signupRole==='club'){ const id='v'+(Date.now()%10000);
+        S.pendingClubs.push({id,name:S.auth.handle||'New Venue',area:'Sandton',dist:1,genre:'House',when:'Soon',minFrom:1500,tagline:'Just joined Seat\'d.',style:'neon',g:['#FF3DAE','#7A4DFF'],status:'pending',owner:'me',applicant:S.auth.name});
+      }
+      setRole(S.signupRole); return; }
+    if(a==='near'){S.nearMe=!S.nearMe;render();return;}
+    if(a==='friends'){S.screen='friends';render();return;}
+    if(a==='msg-back'){S.screen='home';render();return;}
+    if(a==='chat-back'){S.screen='home';render();return;}
+    if(a==='send'){send();return;}
+    if(a==='edit'){S.screen='editprofile';render();return;}
+    if(a==='my-bookings'){S.tab='bookings';S.screen='home';render();return;}
+    if(a==='prof-back'){S.screen='home';render();return;}
+    if(a==='save-profile'){const n=root.querySelector('#e-name'),h=root.querySelector('#e-handle'),b=root.querySelector('#e-bio');
+      if(n)people.me.name=n.value; if(h)people.me.handle=h.value.startsWith('@')?h.value:'@'+h.value; if(b)people.me.bio=b.value; S.screen='home';render();return;}
+    if(a==='toggle-out'){people.me.out=!people.me.out;render();return;}
+    if(a==='toggle-split'){const pi=root.querySelector('#promo-in'); if(pi)S.promoterCode=pi.value.toUpperCase().trim()||S.promoterCode; S.splitPay=!S.splitPay;render();return;}
+    if(a==='add-friend-booking'){addFriendFromInput();return;}
+    if(a==='logout'){S.role=null;S.screen='home';S.splashDone=true;render();return;}
+    if(a==='save-venue'){const v=clubVenue();const n=root.querySelector('#s-name'),t=root.querySelector('#s-tag'),g=root.querySelector('#s-genre');
+      if(n)v.name=n.value; if(t)v.tagline=t.value; if(g)v.genre=g.value; render();return;}
+  }
+
+  function sendBookingInvite(key){
+    const parts=String(key).split(':'), bid=parts[0], uid=parts[1];
+    const r=S.requests.find(x=>x.id===bid); if(!r)return;
+    let id=uid;
+    if(uid==='new'){
+      const raw=(S.shareDraft||'').trim(); if(!raw)return;
+      const clean=raw.startsWith('@')?raw.slice(1):raw;
+      id='p'+Date.now();
+      people[id]={id,name:clean.replace(/^./,c=>c.toUpperCase()),handle:raw.startsWith('@')?raw:'@'+clean.toLowerCase().replace(/\s+/g,''),g:['#2BD4FF','#7A4DFF'],online:false};
+      if(!S.friends.includes(id))S.friends.push(id);
+    }
+    const p=people[id]; if(!p)return;
+    S.convos[id]=S.convos[id]||[];
+    S.convos[id].push({f:'me',t:`Seat'd invite: join my table at ${r.venue} (${r.table}). Booking ref ${r.code||r.id}. Link: ${bookingLink(r)}`});
+    if(!S.friends.includes(id))S.friends.push(id);
+    S.shareSent=bid; S.shareDraft=''; render();
+  }
+
+  function addFriendFromInput(){
+    const i=root.querySelector('#friend-in'); const raw=(i&&i.value?i.value.trim():''); if(!raw)return;
+    const id='p'+Date.now(); const clean=raw.startsWith('@')?raw.slice(1):raw;
+    people[id]={id,name:clean.replace(/^./,c=>c.toUpperCase()),handle:raw.startsWith('@')?raw:'@'+clean.toLowerCase().replace(/\s+/g,''),g:['#2BD4FF','#7A4DFF'],online:false};
+    S.friends.push(id); if(S.screen==='booking')S.invited.push(id); render();
+  }
+  function makePublic(bookingId){
+    const r=S.requests.find(x=>x.id===bookingId); if(!r)return;
+    if(!publicTableForBooking(bookingId)){
+      { const limit=tableSeatLimitBy(r.vid,r.table)||8; const open=Math.max(0,limit-((r.men||0)+(r.women||0))); S.publicTables.unshift({id:'pub'+Date.now(),bookingId:r.id,venue:r.venue,vid:r.vid,table:r.table,tier:r.tier,owner:people.me.name,ownerId:'me',malePrice:Math.ceil((r.total||r.min||0)/4),femalePrice:Math.ceil((r.total||r.min||0)/5),price:Math.ceil((r.total||r.min||0)/4),seatsOpen:open,status:'open',joinRequests:open>0?[{id:'jr'+Date.now(),userId:'p5',name:'Jay R.',gender:'male',amount:Math.ceil((r.total||r.min||0)/4),status:'pending'}]:[],joiners:[]}); }
+    }
+    render();
+  }
+  function savePublicPrice(id){
+    const pt=S.publicTables.find(x=>x.id===id); if(!pt)return;
+    const male=root.querySelector('#pub-male-price-'+id), female=root.querySelector('#pub-female-price-'+id);
+    const mVal=parseInt((male&&male.value||'').replace(/\D/g,''),10);
+    const fVal=parseInt((female&&female.value||'').replace(/\D/g,''),10);
+    if(mVal>0){ pt.malePrice=mVal; pt.price=mVal; }
+    if(fVal>0) pt.femalePrice=fVal;
+    render();
+  }
+  function requestJoinPublic(key){
+    const [id,genderRaw]=String(key).split(':');
+    const gender=genderRaw==='female'?'female':'male';
+    const pt=S.publicTables.find(x=>x.id===id); if(!pt)return;
+    if(publicSpotsOpen(pt)<=0){ render(); return; }
+    if((pt.joinRequests||[]).some(j=>j.userId==='me'&&j.status==='pending') || (pt.joiners||[]).some(j=>j.id==='me')){ render(); return; }
+    S.activeJoin={ptId:id,gender};
+    S.screen='joinpay';
+    render();
+  }
+  function confirmJoinPayment(){
+    if(!S.activeJoin)return;
+    const {ptId,gender}=S.activeJoin;
+    const pt=S.publicTables.find(x=>x.id===ptId); if(!pt)return;
+    pt.joinRequests=pt.joinRequests||[];
+    if(publicSpotsOpen(pt)<=0){ S.activeJoin=null; S.screen='home'; render(); return; }
+    const amount=publicJoinPrice(pt,gender);
+    if(!pt.joinRequests.some(j=>j.userId==='me'&&j.status==='pending') && !(pt.joiners||[]).some(j=>j.id==='me')){
+      pt.joinRequests.push({id:'jr'+Date.now(),userId:'me',name:people.me.name,gender,amount,subtotal:amount,serviceFee:serviceFee(amount),total:withServiceFee(amount),status:'pending'});
+    }
+    S.activeJoin=null;
+    S.screen='home'; S.tab='discover';
+    render();
+  }
+  function decideJoin(key,ok){
+    const [ptid,jrid]=key.split(':'); const pt=S.publicTables.find(x=>x.id===ptid); if(!pt)return;
+    const j=(pt.joinRequests||[]).find(x=>x.id===jrid); if(!j)return;
+    if(ok){ if(publicSpotsOpen(pt)<=0){ render(); return; } j.status='approved'; pt.joiners=pt.joiners||[]; if(!pt.joiners.some(x=>x.id===j.userId)) pt.joiners.push({id:j.userId,name:j.name,gender:j.gender,amount:j.amount||publicJoinCharge(pt,j.gender),status:'approved'}); pt.seatsOpen=publicSpotsOpen(pt); }
+    else j.status='denied';
+    render();
+  }
+  function go(to){
+    if(to==='submit'){const t=tablesFor(S.venueId).find(x=>x.id===S.selTable),v=venue(S.venueId),id='r'+Date.now(); if((S.men+S.women)>t.seats){S.screen='booking';render();return;}
+      const pi=root.querySelector('#promo-in'); if(pi)S.promoterCode=pi.value.toUpperCase().trim()||S.promoterCode;
+      const m=bookingMath(t);
+      const payments=splitPaymentsFor(t,v);
+      const req={id,venue:v.name,vid:v.id,table:t.id,tier:t.tier,men:S.men,women:S.women,total:m.chargeTotal,subtotal:m.groupTotal,serviceFee:m.fee,paidNow:payments[0].amount,min:t.min,status:'pending',deadlineMs:Date.now()+20*60*1000,code:code(),who:'You',t:'just now',invited:S.splitPay?S.invited.slice():[],splitPay:S.splitPay,promo:S.promoterCode,payments};
+      S.requests.unshift(req);
+      sendPaymentPings(req);
+      S.activeReq=id;S.screen='status';render();return;}
+    if(to==='back-discover'){S.screen='home';S.tab='discover';render();return;}
+    if(to==='venue'){S.screen='venue';render();return;}
+    if(to==='booking'){S.screen='booking';render();return;}
+    if(to==='pay'){const t=S.venueId&&S.selTable?tablesFor(S.venueId).find(x=>x.id===S.selTable):null; if(t&&(S.men+S.women)>t.seats){S.screen='booking';render();return;}}
+    S.screen=to;render();
+  }
+  function decide(id,status){const r=S.requests.find(x=>x.id===id);if(!r)return;if(status==='confirmed'&&!allPaid(r))return;r.status=status;
+    if(status==='confirmed'&&r.vid&&S.tables[r.vid]){const tt=S.tables[r.vid].find(x=>x.id===r.table);if(tt)tt.booked=true;}
+    render();}
+  function approveClub(id){const v=S.pendingClubs.find(x=>x.id===id);if(!v)return;v.status='live';v.when='This weekend';venues.push(v);S.pendingClubs=S.pendingClubs.filter(x=>x.id!==id);S.clubVenueId=id;render();}
+  function send(){const i=root.querySelector('#msg-in');if(!i||!i.value.trim())return;const id=S.activeChat;
+    (S.convos[id]=S.convos[id]||[]).push({f:'me',t:i.value.trim()});i.value='';render();
+    setTimeout(()=>{const replies=['hahahaha','say lessss','booking it now','where you sitting?','pulling up'];
+      (S.convos[id]=S.convos[id]||[]).push({f:'them',t:replies[Math.floor(Math.random()*replies.length)]});
+      if(S.activeChat===id&&S.screen==='chat')render();},1300);}
+
+  setInterval(()=>{
+    if(refreshExpiries()){ render(); return; }
+    updateTimerDisplays();
+  },1000);
+  render();
+})();
+</script>
