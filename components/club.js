@@ -5,7 +5,7 @@ import { Bar, Line } from 'react-chartjs-2';
 import { AREAS, tierMeta, fmt, serviceFee } from '@/lib/data';
 import {
   useApp, mutate, venues, venue, clubVenue, tablesFor, allPaid, paidCount,
-  amountOutstanding, decide, scanNext, toast,
+  amountOutstanding, decide, scanNext, toast, syncVenueToDb,
 } from '@/lib/store';
 import { Icon, Empty, OfflineBar, Cover, Deadline } from './ui';
 import { PaymentRows } from './user';
@@ -176,6 +176,7 @@ function ClubManage() {
               if (f.name.trim()) v.name = f.name.trim();
               v.tagline = f.tagline; v.genre = f.genre; v.dress = f.dress; v.open = f.open; v.vip = f.vip;
             });
+            syncVenueToDb(v);
             setForm(null);
             toast('Venue published');
           }}>Save &amp; publish</button>

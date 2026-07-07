@@ -1,6 +1,6 @@
 'use client';
 import { useEffect } from 'react';
-import { useApp, mutate, setRole, refreshExpiries } from '@/lib/store';
+import { useApp, mutate, setRole, refreshExpiries, hydrateFromDb } from '@/lib/store';
 import { AuthView } from '@/components/auth';
 import { Discover, MapScreen, VenueScreen, BookingScreen, PayScreen, JoinPayScreen, StatusScreen, MyBookings } from '@/components/user';
 import { MessagesHome, FriendsScreen, FriendProfile, ChatScreen } from '@/components/social';
@@ -54,8 +54,9 @@ function Screen() {
 export default function App() {
   const s = useApp();
 
-  // boot skeleton
+  // boot skeleton + load real data from the database
   useEffect(() => {
+    hydrateFromDb();
     const t = setTimeout(() => mutate((x) => { x.booting = false; }), 700);
     return () => clearTimeout(t);
   }, []);
