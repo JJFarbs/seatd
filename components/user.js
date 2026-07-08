@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { AREAS, GENRES, tierMeta, fmt, serviceFee, searchClubs } from '@/lib/data';
 import {
@@ -8,7 +8,7 @@ import {
   publicJoinPrice, publicJoinCharge, publicSpotsOpen, openPublicTables, searchPeople,
   bookingLink, qrPayload, toggleFav, submitReview, addFriendFromDraft, sendBookingInvite,
   makePublic, savePublicPrice, requestJoinPublic, confirmJoinPayment, decideJoin,
-  submitBooking, markPaid, nativeShare, copyText,
+  submitBooking, markPaid, nativeShare, copyText, addFriend, searchProfiles,
 } from '@/lib/store';
 import {
   Icon, Pin, CheckBig, LogoMark, Av, StatusChip, Empty, OfflineBar, Cover, Gallery,
@@ -68,8 +68,10 @@ export function PaymentRows({ r, editable }) {
 }
 
 export function PublicTableCard({ pt, mode }) {
-  const requested = (pt.joinRequests || []).some((j) => j.userId === 'me' && j.status === 'pending');
-  const joined = (pt.joiners || []).some((j) => j.id === 'me');
+  const s = useApp();
+  const meId = s.session?.user?.id || 'me';
+  const requested = (pt.joinRequests || []).some((j) => j.userId === meId && j.status === 'pending');
+  const joined = (pt.joiners || []).some((j) => j.id === meId);
   const mPrice = publicJoinPrice(pt, 'male'), fPrice = publicJoinPrice(pt, 'female'), spots = publicSpotsOpen(pt);
   const js = (pt.joiners || []).filter((j) => j.status === 'approved');
   return (
@@ -128,10 +130,60 @@ function OwnerPublicControls({ pt }) {
   );
 }
 
+// Live people search: real Seat'd profiles when the database + login are active,
+// the old demo personas otherwise.
+export function useProfileSearch(q) {
+  const s = useApp();
+  const dbMode = s.dbReady && !!s.session;
+  const [hits, setHits] = useState([]);
+  useEffect(() => {
+    if (!dbMode) return;
+    let alive = true;
+    const t = setTimeout(async () => {
+      const res = await searchProfiles(q);
+      if (alive) setHits(res || []);
+    }, 300);
+    return () => { alive = false; clearTimeout(t); };
+  }, [q, dbMode]);
+  if (!dbMode) return null; // caller falls back to demo search
+  return hits;
+}
 export function FriendSearch({ context }) {
   const s = useApp();
-  const hits = searchPeople(s.friendDraft);
   const q = (s.friendDraft || '').trim();
+  const dbHits = useProfileSearch(q);
+  const pick = (id) => {
+    if (context === 'booking') {
+      mutate((st) => {
+        if (!st.friends.includes(id)) st.friends.push(id);
+        if (!st.invited.includes(id)) st.invited.push(id);
+        st.friendDraft = '';
+      });
+      if (s.dbReady && s.session && !s.friends.includes(id)) addFriend(id);
+    } else {
+      addFriend(id);
+      mutate((st) => { st.friendDraft = ''; });
+    }
+  };
+  if (dbHits !== null) {
+    if (!q) return null;
+    if (!dbHits.length) return <div className="searchresults"><div className="hintrow">No Seat&apos;d member matches “{q}”. They need an account before you can add them — send them seatedbookings.com.</div></div>;
+    return (
+      <div className="searchresults">
+        {dbHits.map((p) => (
+          <div className="searchhit" key={p.id}>
+            <div style={{ cursor: 'pointer' }} onClick={() => mutate((st) => { st.viewFriend = p.id; st.tab = 'messages'; st.screen = 'friendprofile'; })}><Av p={people[p.id] || p} size={34} /></div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="who">{p.name}</div>
+              <div className="match">{p.handle} — Seat&apos;d member</div>
+            </div>
+            <button className="btn sm ghost" style={{ width: 'auto', padding: '8px 12px' }} onClick={() => pick(p.id)}>{context === 'booking' ? 'Invite' : 'Add'}</button>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  const hits = searchPeople(s.friendDraft);
   if (!hits.length) return <div className="searchresults"><div className="hintrow">No close match found. Press Add to create {q || 'a new friend'}.</div></div>;
   return (
     <div className="searchresults">
@@ -158,7 +210,10 @@ export function ShareBlock({ r }) {
   const s = useApp();
   const link = bookingLink(r);
   const shareText = encodeURIComponent(`Join my table at ${r.venue} (${r.table}) — booking ref ${r.code}. ${link}`);
-  const hits = searchPeople(s.shareDraft);
+  const dbHits = useProfileSearch((s.shareDraft || '').trim());
+  const hits = dbHits !== null
+    ? dbHits.map((p) => ({ p: people[p.id] || p, label: "Seat'd member" }))
+    : searchPeople(s.shareDraft);
   return (
     <div className="sharebox">
       <div className="row">

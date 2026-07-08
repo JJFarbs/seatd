@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { todayStr } from '@/lib/data';
-import { useApp, mutate, people, toast, authSignOut, saveProfileToDb } from '@/lib/store';
+import { useApp, mutate, people, toast, authSignOut, saveProfileToDb, readAllNotifs } from '@/lib/store';
 import { Icon, Av, Empty, LogoMark, OfflineBar } from './ui';
 import { UserTabbar } from './user';
 
@@ -126,7 +126,7 @@ export function NotifScreen() {
           </div>
         )) : <Empty>All caught up.<br />Payment pings, approvals and invites land here.</Empty>}
         {s.notifs.some((n) => n.unread) && (
-          <button className="btn ghost sm" style={{ marginTop: 18, maxWidth: 300 }} onClick={() => mutate((x) => { x.notifs.forEach((n) => { n.unread = false; }); })}>Mark all as read</button>
+          <button className="btn ghost sm" style={{ marginTop: 18, maxWidth: 300 }} onClick={readAllNotifs}>Mark all as read</button>
         )}
       </div></div>
       <UserTabbar />

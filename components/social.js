@@ -1,12 +1,12 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { useApp, mutate, people, venues, sendChat, addFriendFromDraft, copyText, S } from '@/lib/store';
+import { useApp, mutate, people, venues, sendChat, addFriendFromDraft, copyText, addFriend, refreshChat } from '@/lib/store';
 import { Icon, Av, Stars, Empty, OfflineBar } from './ui';
 import { UserTabbar, FriendSearch } from './user';
 
 export function MessagesHome() {
   const s = useApp();
-  const convos = s.friends.filter((id) => s.convos[id] && people[id]);
+  const convos = [...new Set([...s.friends, ...Object.keys(s.convos)])].filter((id) => s.convos[id]?.length && people[id]);
   return (
     <>
       <OfflineBar />
@@ -48,10 +48,12 @@ export function FriendsScreen() {
       <div className="body enter"><div className="pad">
         <input className="input" placeholder="Search people by name or @handle" value={s.friendDraft}
           onChange={(e) => mutate((x) => { x.friendDraft = e.target.value; })}
-          onKeyDown={(e) => { if (e.key === 'Enter') addFriendFromDraft(); }} />
-        <div className="addfriend">
-          <button className="btn sm" style={{ width: '100%', padding: '13px 14px' }} onClick={addFriendFromDraft}>Add typed name as new friend</button>
-        </div>
+          onKeyDown={(e) => { if (e.key === 'Enter' && !(s.dbReady && s.session)) addFriendFromDraft(); }} />
+        {!(s.dbReady && s.session) && (
+          <div className="addfriend">
+            <button className="btn sm" style={{ width: '100%', padding: '13px 14px' }} onClick={addFriendFromDraft}>Add typed name as new friend</button>
+          </div>
+        )}
         <FriendSearch context="friends" />
         <div className="eyebrow" style={{ marginTop: 20 }}>Your crew</div>
         <div>
@@ -72,7 +74,7 @@ export function FriendsScreen() {
             <div className="lrow" key={p.id} onClick={() => openProfile(p.id)}>
               <Av p={p} />
               <div style={{ flex: 1, minWidth: 0 }}><div className="nm">{p.name}</div><div className="meta2">{p.handle}</div></div>
-              <button className="btn sm ghost" style={{ width: 'auto', padding: '9px 14px' }} onClick={(e) => { e.stopPropagation(); mutate((x) => { if (!x.friends.includes(p.id)) x.friends.push(p.id); }); }}>Add</button>
+              <button className="btn sm ghost" style={{ width: 'auto', padding: '9px 14px' }} onClick={(e) => { e.stopPropagation(); addFriend(p.id); }}>Add</button>
             </div>
           )) : <div className="sub" style={{ padding: '14px 0' }}>You&apos;ve added everyone.</div>}
         </div>
@@ -89,7 +91,9 @@ export function FriendProfile() {
   const theirBookings = s.requests.filter((r) => r.who === p.name || (r.payments || []).some((x) => x.id === p.id));
   const theirReviews = [];
   venues.forEach((v) => (v.reviews || []).forEach((r) => { if (r.name === p.name) theirReviews.push({ ...r, venue: v.name }); }));
-  const mutual = s.friends.filter((id) => id !== p.id && people[id]).slice(0, 3);
+  const dbMode = s.dbReady && !!s.session;
+  const mutual = dbMode ? [] : s.friends.filter((id) => id !== p.id && people[id]).slice(0, 3);
+  const memberSince = p.since ? new Date(p.since).toLocaleDateString('en-ZA', { month: 'short', year: 'numeric' }) : '—';
   const link = `https://seatd.app/u/${p.handle.replace('@', '')}`;
   const shareText = encodeURIComponent(`Join me on Seat'd — add ${p.handle}. ${link}`);
   const invite = () => {
@@ -111,12 +115,14 @@ export function FriendProfile() {
           <div className="pstats">
             <div className="b"><div className="n">{theirBookings.length}</div><div className="l">Bookings</div></div>
             <div className="b"><div className="n">{theirReviews.length}</div><div className="l">Reviews</div></div>
-            <div className="b"><div className="n">{mutual.length}</div><div className="l">Mutual friends</div></div>
+            {dbMode
+              ? <div className="b"><div className="n" style={{ fontSize: 17 }}>{memberSince}</div><div className="l">Member since</div></div>
+              : <div className="b"><div className="n">{mutual.length}</div><div className="l">Mutual friends</div></div>}
           </div>
           <div className="wideactions" style={{ maxWidth: 420, margin: '16px auto 0' }}>
             {isFriend
               ? <button className="btn sm" onClick={() => mutate((x) => { x.activeChat = p.id; x.screen = 'chat'; })}>Message</button>
-              : <button className="btn sm" onClick={() => mutate((x) => { x.friends.push(p.id); })}>Add friend</button>}
+              : <button className="btn sm" onClick={() => addFriend(p.id)}>Add friend</button>}
             <button className="btn sm ghost" onClick={invite}><Icon name="share" size={18} /> Invite</button>
           </div>
         </div>
@@ -164,6 +170,12 @@ export function ChatScreen() {
   const bodyRef = useRef(null);
   const msgs = (p && s.convos[s.activeChat]) || [];
   useEffect(() => { if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight; }, [msgs.length]);
+  // poll for the other person's replies while the chat is open
+  useEffect(() => {
+    if (!(s.dbReady && s.session && s.activeChat)) return;
+    const t = setInterval(() => refreshChat(s.activeChat), 4000);
+    return () => clearInterval(t);
+  }, [s.dbReady, s.session, s.activeChat]);
   if (!p) return <MessagesHome />;
   const doSend = () => { if (draft.trim()) { sendChat(draft); setDraft(''); } };
   return (
