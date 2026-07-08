@@ -1,6 +1,6 @@
 'use client';
 import { useEffect } from 'react';
-import { useApp, mutate, setRole, refreshExpiries, hydrateFromDb, initAuth } from '@/lib/store';
+import { useApp, mutate, setRole, refreshExpiries, hydrateFromDb, initAuth, pollLive } from '@/lib/store';
 import { AuthView } from '@/components/auth';
 import { Discover, MapScreen, VenueScreen, BookingScreen, PayScreen, JoinPayScreen, StatusScreen, MyBookings } from '@/components/user';
 import { MessagesHome, FriendsScreen, FriendProfile, ChatScreen } from '@/components/social';
@@ -65,6 +65,12 @@ export default function App() {
   // auto-cancel watchdog
   useEffect(() => {
     const t = setInterval(() => { if (refreshExpiries()) mutate(() => {}); }, 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  // live refresh: notifications, bookings, public tables
+  useEffect(() => {
+    const t = setInterval(pollLive, 12000);
     return () => clearInterval(t);
   }, []);
 

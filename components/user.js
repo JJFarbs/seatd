@@ -24,7 +24,7 @@ export function UserTabbar() {
     ['discover', 'bolt', 'Tonight', 0],
     ['map', 'map', 'Map', 0],
     ['bookings', 'ticket', 'Bookings', myReq],
-    ['messages', 'chat', 'Chats', 1],
+    ['messages', 'chat', 'Chats', 0],
     ['profile', 'user', 'Profile', unread],
   ];
   return (
@@ -43,6 +43,8 @@ export function UserTabbar() {
 
 // ---------- shared booking widgets ----------
 export function PaymentRows({ r, editable }) {
+  const s = useApp();
+  const uid = s.session?.user?.id;
   const ps = r.payments || [];
   if (!ps.length) return null;
   return (
@@ -59,7 +61,7 @@ export function PaymentRows({ r, editable }) {
             </div>
           </div>
           {editable && p.status !== 'paid'
-            ? <button className="btn sm ghost" style={{ width: 'auto', padding: '8px 12px' }} onClick={() => markPaid(r, p.id)}>Mark paid</button>
+            ? <button className={`btn sm ${p.id === uid ? 'gold' : 'ghost'}`} style={{ width: 'auto', padding: '8px 12px' }} onClick={() => markPaid(r, p.id)}>{p.id === uid ? 'Pay my share' : 'Mark paid'}</button>
             : <span className="badge" style={{ background: p.status === 'paid' ? 'rgba(63,224,160,.15)' : 'rgba(255,194,75,.14)', color: p.status === 'paid' ? 'var(--ok)' : 'var(--gold)' }}>{p.status === 'paid' ? 'PAID' : 'PINGED'}</span>}
         </div>
       ))}
@@ -799,8 +801,9 @@ export function StatusScreen() {
 export function MyBookings() {
   const s = useApp();
   const uid = s.session?.user?.id;
+  // your own bookings, plus bookings you're invited to split
   const mine = s.requests.filter((r) =>
-    uid ? r.userId === uid
+    uid ? (r.userId === uid || (r.payments || []).some((p) => p.id === uid))
       : !s.dbReady && (r.who === 'You' || (r.payments || []).some((p) => p.id === 'host' && p.name === people.me.name)));
   return (
     <>

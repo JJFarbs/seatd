@@ -14,8 +14,8 @@
   body,#root{background-color:#050308;}
   button{touch-action:manipulation;}
 
-  .stage{ min-height:100vh;min-height:100dvh;width:100%;display:flex;flex-direction:column;align-items:center;gap:14px;
-    padding:20px clamp(12px,2vw,32px) 34px;font-family:var(--body);color:var(--txt);
+  .stage{ height:100vh;height:100dvh;width:100%;display:flex;flex-direction:column;align-items:center;gap:12px;
+    padding:14px clamp(10px,1.5vw,24px) 16px;font-family:var(--body);color:var(--txt);
     background:radial-gradient(900px 600px at 18% -5%,rgba(255,61,174,.20),transparent 60%),
       radial-gradient(900px 700px at 95% 8%,rgba(43,212,255,.15),transparent 55%),
       radial-gradient(700px 600px at 50% 110%,rgba(122,77,255,.18),transparent 55%),#050308; }
@@ -28,7 +28,7 @@
   .hint b{ color:var(--magenta); }
 
   /* ---- App shell: fluid, no fake phone frame ---- */
-  .phone{ width:min(1180px,100%);height:min(900px,calc(100dvh - 128px));min-height:480px;flex:none;position:relative;
+  .phone{ width:min(1680px,100%);flex:1 1 auto;min-height:420px;position:relative;
     background:rgba(11,7,16,.74);border:1px solid rgba(255,255,255,.08);border-radius:28px;overflow:hidden;
     box-shadow:0 30px 90px -35px rgba(255,61,174,.45),0 24px 80px -35px rgba(43,212,255,.32);}
   .screen{ position:relative;width:100%;height:100%;background:linear-gradient(180deg,rgba(20,16,25,.94),rgba(11,7,16,.98));border-radius:28px;overflow:hidden;display:flex;flex-direction:column;}
@@ -334,7 +334,7 @@
     .stage{padding:0;gap:0;background:#050308;}
     .roleswitch{margin:10px 10px 6px;max-width:calc(100vw - 20px);}
     .hint{margin-bottom:8px;}
-    .phone{width:100%;height:calc(100dvh - 104px);border-radius:0;border-left:0;border-right:0;border-bottom:0;box-shadow:none;}
+    .phone{width:100%;flex:1 1 auto;height:auto;border-radius:0;border-left:0;border-right:0;border-bottom:0;box-shadow:none;}
     .screen{border-radius:0;}
     .pad{padding:16px 16px 28px;}
     .topbar{padding:12px 16px 4px;}
