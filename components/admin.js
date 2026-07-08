@@ -16,10 +16,12 @@ const chartOpts = {
   },
 };
 
+const pendingClubsList = (s) => [...s.pendingClubs, ...venues.filter((v) => v.status === 'pending')];
+
 export function AdminTabbar() {
   const s = useApp();
   const tabs = [
-    ['clubs', 'store', 'Clubs', s.pendingClubs.length],
+    ['clubs', 'store', 'Clubs', pendingClubsList(s).length],
     ['bookings', 'ticket', 'Bookings', 0],
     ['payouts', 'chart', 'Payouts', 0],
     ['reports', 'chat', 'Reports', s.reports.filter((r) => r.status === 'open').length],
@@ -49,6 +51,7 @@ export function AdminView() {
 
 function AdminClubs() {
   const s = useApp();
+  const pending = pendingClubsList(s);
   const suspended = venues.filter((v) => v.status === 'suspended');
   return (
     <>
@@ -57,7 +60,7 @@ function AdminClubs() {
         <div className="eyebrow" style={{ color: 'var(--blue)' }}>Seat&apos;d — Joburg ops</div>
         <div className="h1" style={{ fontSize: 30 }}>Club<br />applications</div>
         <div className="stagger">
-          {s.pendingClubs.length ? s.pendingClubs.map((v) => (
+          {pending.length ? pending.map((v) => (
             <div className="req" key={v.id}>
               <div className="row">
                 <div style={{ display: 'flex', gap: 12, alignItems: 'center', minWidth: 0 }}>
@@ -212,7 +215,7 @@ function AdminOverview() {
         </div>
         <div className="summary">
           <div className="eyebrow">Operational controls</div>
-          <div className="minirow"><span>Club approvals</span><b>{s.pendingClubs.length} waiting</b></div>
+          <div className="minirow"><span>Club approvals</span><b>{pendingClubsList(s).length} waiting</b></div>
           <div className="minirow"><span>Payment webhook simulation</span><b style={{ color: 'var(--ok)' }}>Healthy</b></div>
           <div className="minirow"><span>Auto-cancel watchdog</span><b style={{ color: 'var(--ok)' }}>Running</b></div>
         </div>

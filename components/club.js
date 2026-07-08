@@ -5,7 +5,8 @@ import { Bar, Line } from 'react-chartjs-2';
 import { AREAS, tierMeta, fmt, serviceFee } from '@/lib/data';
 import {
   useApp, mutate, venues, venue, clubVenue, tablesFor, allPaid, paidCount,
-  amountOutstanding, decide, scanNext, toast, syncVenueToDb,
+  amountOutstanding, decide, scanNext, toast, syncVenueToDb, saveVenueLayout,
+  FLOOR_SLOTS, authSignOut,
 } from '@/lib/store';
 import { Icon, Empty, OfflineBar, Cover, Deadline } from './ui';
 import { PaymentRows } from './user';
@@ -191,19 +192,75 @@ function ClubManage() {
           <div className="featurecard"><div className="n">{v.capacity || '—'}</div><div className="l">Capacity</div></div>
           <div className="featurecard"><div className="n">22:00</div><div className="l">Doors open</div></div>
         </div>
-        <div className="summary">
-          <div className="eyebrow">Table controls</div>
-          {ts.map((t) => <div className="minirow" key={t.id}><span>{t.id} — {tierMeta[t.tier].label} · {t.seats} seats</span><b>{fmt(t.min)}</b></div>)}
-        </div>
+        <TableLayoutEditor v={v} />
         <div className="summary">
           <div className="eyebrow">Upcoming events</div>
           {(v.events || []).length ? (v.events || []).map((e, i) => (
             <div className="minirow" key={i}><span><b style={{ color: 'var(--txt)' }}>{e[0]}</b> — {e[1]}</span><b>{e[2]}</b></div>
           )) : <div className="meta2">No events yet.</div>}
         </div>
+        <button className="btn ghost" style={{ marginTop: 24, maxWidth: 400 }} onClick={authSignOut}>Log out</button>
       </div></div>
       <ClubTabbar />
     </>
+  );
+}
+
+// Small table-layout editor: tables fill fixed floor slots in order;
+// owners control how many tables exist, their tier, seats and minimum spend.
+const TIER_DEFAULTS = { vip: { seats: 8, min: 6000 }, booth: { seats: 6, min: 3000 }, std: { seats: 4, min: 1500 } };
+function TableLayoutEditor({ v }) {
+  useApp();
+  const ts = tablesFor(v.id);
+  const full = ts.length >= FLOOR_SLOTS.length;
+  const nextId = (tier) => {
+    const pre = tier === 'vip' ? 'V' : tier === 'booth' ? 'B' : 'S';
+    let n = 1;
+    while (ts.some((t) => t.id === pre + n)) n++;
+    return pre + n;
+  };
+  const reslot = () => ts.forEach((t, i) => Object.assign(t, FLOOR_SLOTS[i]));
+  const add = (tier) => {
+    if (full) { toast('The floor is full (13 tables max)'); return; }
+    mutate(() => { ts.push({ id: nextId(tier), ...FLOOR_SLOTS[ts.length], tier, ...TIER_DEFAULTS[tier], booked: false }); reslot(); });
+  };
+  const remove = (id) => mutate(() => {
+    const i = ts.findIndex((t) => t.id === id);
+    if (i >= 0) ts.splice(i, 1);
+    reslot();
+  });
+  const setNum = (t, key) => (e) => {
+    const val = parseInt(String(e.target.value).replace(/\D/g, ''), 10);
+    mutate(() => { t[key] = isNaN(val) ? 0 : val; });
+  };
+  return (
+    <div className="summary" style={{ maxWidth: 780 }}>
+      <div className="row">
+        <div><div className="eyebrow">Table layout</div><div className="meta2" style={{ marginTop: 4 }}>{ts.length}/{FLOOR_SLOTS.length} tables on the floor — guests see this map instantly.</div></div>
+      </div>
+      {ts.map((t) => (
+        <div className="minirow" key={t.id} style={{ flexWrap: 'wrap', gap: 8 }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 110 }}>
+            <i className="swatch" style={{ background: tierMeta[t.tier].color }} />
+            <b style={{ color: 'var(--txt)' }}>{t.id}</b> {tierMeta[t.tier].label}
+            {t.booked ? <span className="badge" style={{ background: 'rgba(255,107,107,.14)', color: 'var(--warn)' }}>BOOKED</span> : null}
+          </span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <label className="meta2" style={{ fontSize: 11 }}>Seats</label>
+            <input className="input" inputMode="numeric" value={t.seats} onChange={setNum(t, 'seats')} style={{ width: 64, minHeight: 38, padding: '6px 10px' }} />
+            <label className="meta2" style={{ fontSize: 11 }}>Min spend R</label>
+            <input className="input" inputMode="numeric" value={t.min} onChange={setNum(t, 'min')} style={{ width: 90, minHeight: 38, padding: '6px 10px' }} />
+            <button className="btn sm ghost" style={{ width: 'auto', padding: '6px 10px', minHeight: 38 }} disabled={!!t.booked} onClick={() => remove(t.id)}>Remove</button>
+          </span>
+        </div>
+      ))}
+      <div className="wideactions" style={{ marginTop: 12 }}>
+        <button className="btn sm ghost" disabled={full} onClick={() => add('vip')}>+ VIP</button>
+        <button className="btn sm ghost" disabled={full} onClick={() => add('booth')}>+ Booth</button>
+        <button className="btn sm ghost" disabled={full} onClick={() => add('std')}>+ Standard</button>
+      </div>
+      <button className="btn sm" style={{ marginTop: 12 }} onClick={() => saveVenueLayout(v, ts)}>Save layout</button>
+    </div>
   );
 }
 
