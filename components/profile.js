@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { todayStr } from '@/lib/data';
-import { useApp, mutate, people, toast } from '@/lib/store';
+import { useApp, mutate, people, toast, authSignOut, saveProfileToDb } from '@/lib/store';
 import { Icon, Av, Empty, LogoMark, OfflineBar } from './ui';
 import { UserTabbar } from './user';
 
@@ -17,7 +17,7 @@ export function ProfileScreen() {
         <div className="phero">
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14 }}><Av p={m} size={88} /></div>
           <div className="h2" style={{ fontSize: 24 }}>{m.name}</div>
-          <div className="sub">{m.handle} · Sandton</div>
+          <div className="sub">{m.handle}{s.session ? ` · ${s.session.user.email}` : ' · guest'}</div>
           <div className="sub" style={{ maxWidth: 280, margin: '8px auto 0' }}>{m.bio}</div>
           <div className="pstats">
             <div className="b"><div className="n">{m.nights}</div><div className="l">Nights out</div></div>
@@ -64,7 +64,7 @@ export function ProfileScreen() {
               <div className="nm" style={{ fontSize: 15 }}>{label}</div><span style={{ color: 'var(--muted)' }}><Icon name="arrow" size={20} stroke={2.5} /></span>
             </div>
           ))}
-          <button className="btn ghost" style={{ marginTop: 20, maxWidth: 400 }} onClick={() => mutate((x) => { x.role = null; x.screen = 'home'; x.splashDone = true; })}>Log out</button>
+          <button className="btn ghost" style={{ marginTop: 20, maxWidth: 400 }} onClick={authSignOut}>{s.session ? 'Log out' : 'Exit guest mode'}</button>
         </div>
       </div>
       <UserTabbar />
@@ -93,12 +93,15 @@ export function EditProfile() {
         <div className="field"><label>Username</label><input className="input" value={handle} onChange={(e) => setHandle(e.target.value)} /></div>
         <div className="field"><label>Bio</label><textarea className="input" rows={3} value={bio} onChange={(e) => setBio(e.target.value)} /></div>
         <button className="btn" style={{ marginTop: 22 }} onClick={() => {
+          const newName = name.trim() || m.name;
+          const newHandle = handle.trim() ? (handle.startsWith('@') ? handle : '@' + handle) : m.handle;
           mutate((x) => {
-            if (name.trim()) m.name = name.trim();
-            if (handle.trim()) m.handle = handle.startsWith('@') ? handle : '@' + handle;
+            m.name = newName;
+            m.handle = newHandle;
             m.bio = bio;
             x.screen = 'home';
           });
+          saveProfileToDb({ name: newName, handle: newHandle, bio });
           toast('Profile saved');
         }}>Save changes</button>
       </div></div>

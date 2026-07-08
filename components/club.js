@@ -40,7 +40,8 @@ export function ClubTabbar() {
 
 function ClubSelector() {
   const s = useApp();
-  const opts = [...venues.filter((v) => v.status === 'live'), ...s.pendingClubs];
+  let opts = [...venues.filter((v) => v.status !== 'suspended'), ...s.pendingClubs];
+  if (s.lockedVenueId) opts = opts.filter((v) => v.id === s.lockedVenueId);
   return (
     <div className="clubselect">
       {opts.map((v) => (
@@ -54,15 +55,18 @@ function ClubSelector() {
 }
 function ClubRequestSelector() {
   const s = useApp();
-  const opts = [...venues.filter((v) => v.status === 'live'), ...s.pendingClubs];
+  let opts = [...venues.filter((v) => v.status === 'live'), ...s.pendingClubs];
+  if (s.lockedVenueId) opts = opts.filter((v) => v.id === s.lockedVenueId);
   const count = (id) => s.requests.filter((r) => (id === 'all' || r.vid === id) && r.status === 'pending').length;
   const pick = (id) => mutate((x) => { x.clubRequestVenueId = id; });
   return (
     <div className="clubselect">
+      {!s.lockedVenueId && (
       <div className={`clubopt ${s.clubRequestVenueId === 'all' ? 'on' : ''}`} onClick={() => pick('all')}>
         <span className="clubdot" style={{ background: 'linear-gradient(135deg,var(--magenta),var(--blue))' }} />
         <div><div className="cname">All clubs</div><div className="cmeta">{count('all')} waiting</div></div>
       </div>
+      )}
       {opts.map((v) => (
         <div key={v.id} className={`clubopt ${s.clubRequestVenueId === v.id ? 'on' : ''}`} onClick={() => pick(v.id)}>
           <span className="clubdot" style={{ background: `linear-gradient(135deg,${v.g[0]},${v.g[1]})` }} />

@@ -1,8 +1,9 @@
-import { db } from '@/lib/db';
+import { dbFor } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
 export async function PATCH(req, { params }) {
+  const db = dbFor(req.headers.get('authorization'));
   if (!db) return Response.json({ db: false });
   const body = await req.json();
   const allowed = ['status', 'payments', 'cancel_reason', 'paid_now'];

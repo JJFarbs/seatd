@@ -743,7 +743,10 @@ export function StatusScreen() {
 // ---------- my bookings ----------
 export function MyBookings() {
   const s = useApp();
-  const mine = s.requests.filter((r) => r.who === 'You' || (r.payments || []).some((p) => p.id === 'host' && p.name === people.me.name));
+  const uid = s.session?.user?.id;
+  const mine = s.requests.filter((r) =>
+    uid ? r.userId === uid
+      : !s.dbReady && (r.who === 'You' || (r.payments || []).some((p) => p.id === 'host' && p.name === people.me.name)));
   return (
     <>
       <OfflineBar />

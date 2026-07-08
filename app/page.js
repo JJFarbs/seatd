@@ -1,6 +1,6 @@
 'use client';
 import { useEffect } from 'react';
-import { useApp, mutate, setRole, refreshExpiries, hydrateFromDb } from '@/lib/store';
+import { useApp, mutate, setRole, refreshExpiries, hydrateFromDb, initAuth } from '@/lib/store';
 import { AuthView } from '@/components/auth';
 import { Discover, MapScreen, VenueScreen, BookingScreen, PayScreen, JoinPayScreen, StatusScreen, MyBookings } from '@/components/user';
 import { MessagesHome, FriendsScreen, FriendProfile, ChatScreen } from '@/components/social';
@@ -54,9 +54,10 @@ function Screen() {
 export default function App() {
   const s = useApp();
 
-  // boot skeleton + load real data from the database
+  // boot skeleton + load real data + restore login session
   useEffect(() => {
     hydrateFromDb();
+    initAuth();
     const t = setTimeout(() => mutate((x) => { x.booting = false; }), 700);
     return () => clearTimeout(t);
   }, []);
@@ -93,19 +94,23 @@ export default function App() {
     return () => document.removeEventListener('pointerdown', handler);
   }, []);
 
+  const isAdmin = s.profile?.role === 'admin';
   const roleLabel = s.role ? s.role[0].toUpperCase() + s.role.slice(1) : 'Guest';
   return (
     <div className="stage">
-      <div className="roleswitch" role="tablist">
-        {['user', 'club', 'admin'].map((r) => (
-          <button key={r} className={s.role === r ? 'on' : ''} onClick={() => setRole(r)}>{r[0].toUpperCase() + r.slice(1)}</button>
-        ))}
-      </div>
-      <div className="hint">
-        {s.role
-          ? <>Viewing as <b>{roleLabel}</b>. Book in <b>User</b>, approve in <b>Club</b>, list venues in <b>Admin</b> — they&apos;re connected.</>
-          : <>Sign up, or jump straight in with the role switcher above.</>}
-      </div>
+      {isAdmin && (
+        <>
+          <div className="roleswitch" role="tablist">
+            {['user', 'club', 'admin'].map((r) => (
+              <button key={r} className={s.role === r ? 'on' : ''} onClick={() => setRole(r)}>{r[0].toUpperCase() + r.slice(1)}</button>
+            ))}
+          </div>
+          <div className="hint">Admin demo mode — viewing as <b>{roleLabel}</b>. Book in <b>User</b>, approve in <b>Club</b>, oversee in <b>Admin</b>.</div>
+        </>
+      )}
+      {!isAdmin && !s.session && s.role && (
+        <div className="hint" style={{ marginTop: 10 }}>Browsing as guest — <b style={{ cursor: 'pointer' }} onClick={() => mutate((x) => { x.role = null; x.screen = 'home'; })}>create an account</b> to book tables.</div>
+      )}
       <div className="phone"><div className="screen">
         <Screen />
         {s.toastMsg && <div className="apptoast">{s.toastMsg}</div>}

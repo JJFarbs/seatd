@@ -1,8 +1,9 @@
-import { db } from '@/lib/db';
+import { dbFor } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req) {
+  const db = dbFor(req.headers.get('authorization'));
   if (!db) return Response.json({ db: false });
   const body = await req.json();
   const row = {

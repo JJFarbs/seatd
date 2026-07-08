@@ -1,4 +1,4 @@
-import { db } from '@/lib/db';
+import { db, dbFor } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,9 +10,10 @@ export async function GET() {
 }
 
 export async function POST(req) {
-  if (!db) return Response.json({ db: false });
+  const client = dbFor(req.headers.get('authorization'));
+  if (!client) return Response.json({ db: false });
   const body = await req.json();
-  const { error } = await db.from('bookings').insert(body);
+  const { error } = await client.from('bookings').insert(body);
   if (error) return Response.json({ error: error.message }, { status: 500 });
   return Response.json({ ok: true });
 }
