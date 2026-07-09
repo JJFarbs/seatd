@@ -312,12 +312,24 @@ export function Discover() {
           <div className="mast-sub">{s.profile ? `Where to, ${(people.me.name || '').split(' ')[0]}?` : 'Find your table'}</div>
         </div>
         {(() => {
-          const names = venues.filter((v) => v.status === 'live').map((v) => v.name.toUpperCase()).join('  ●  ');
-          return names ? (
-            <div className="marquee" aria-hidden="true">
-              <div className="marquee-track"><span>{names}  ●  </span><span>{names}  ●  </span></div>
+          const live = venues.filter((v) => v.status === 'live');
+          if (!live.length) return null;
+          const openVenue = (id) => mutate((x) => { x.venueId = id; x.selTable = null; x.venueTab = 'tables'; x.screen = 'venue'; });
+          const run = (key) => (
+            <span className="marq-run" key={key}>
+              {live.map((v) => (
+                <span key={v.id}>
+                  <button className="marq-item" onClick={() => openVenue(v.id)}>{v.name.toUpperCase()}</button>
+                  <span className="marq-dot">●</span>
+                </span>
+              ))}
+            </span>
+          );
+          return (
+            <div className="marquee">
+              <div className="marquee-track">{run('a')}{run('b')}</div>
             </div>
-          ) : null;
+          );
         })()}
         <input className="searchbar" type="search" placeholder="Search clubs, areas, music..." style={{ marginTop: 14 }}
           value={s.clubSearch} onChange={(e) => mutate((x) => { x.clubSearch = e.target.value; })} />

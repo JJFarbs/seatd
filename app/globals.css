@@ -634,3 +634,14 @@ details.faq{background:linear-gradient(180deg,rgba(30,23,41,.5),rgba(15,11,21,.9
   .mast-title{-webkit-text-stroke:1.6px rgba(245,240,250,.92);}
   .cover{height:190px;}
 }
+
+/* ---- clickable marquee ---- */
+.marq-run{display:inline-flex;align-items:center;}
+.marq-item{
+  background:none;border:0;cursor:pointer;
+  font:inherit;color:var(--lime);letter-spacing:inherit;text-transform:inherit;
+  padding:8px 6px;min-height:36px;transition:color .15s;
+}
+.marq-item:hover{color:#fff;text-shadow:0 0 14px rgba(200,255,61,.8);}
+.marq-dot{padding:0 18px;opacity:.5;}
+.marquee:hover .marquee-track,.marquee:active .marquee-track{animation-play-state:paused;}
