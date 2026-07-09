@@ -1,10 +1,11 @@
-@import url('https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Unbounded:wght@400;600;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
   :root{
     --ink:#0B0710; --surface:#141019; --surface-2:#1C1626; --line:#2B2336;
     --magenta:#FF3DAE; --violet:#7A4DFF; --blue:#2BD4FF; --gold:#FFC24B; --teal:#3FE0C0;
     --txt:#F5F0FA; --muted:#9A8FB0; --ok:#3FE0A0; --warn:#FF6B6B;
-    --display:'Anton','Inter',system-ui,sans-serif; --body:'Inter',system-ui,-apple-system,sans-serif;
+    --display:'Unbounded','Anton',system-ui,sans-serif; --body:'Space Grotesk','Inter',system-ui,-apple-system,sans-serif;
+    --lime:#C8FF3D;
     --shadow-card:0 4px 24px -8px rgba(0,0,0,.55);
     --shadow-pop:0 18px 50px -12px rgba(0,0,0,.7);
   }
@@ -533,3 +534,103 @@ svg .tbl:not(.booked):hover rect{filter:drop-shadow(0 0 8px rgba(255,61,174,.7))
 details.faq{background:linear-gradient(180deg,rgba(30,23,41,.5),rgba(15,11,21,.9));box-shadow:var(--edge);}
 .availability .a{background:rgba(255,255,255,.03);border-color:var(--line);border-radius:14px;}
 .legend span{opacity:.9;}
+
+/* ============================================================
+   UI v3 — NIGHT OUT. Club-poster energy: Unbounded display,
+   acid-lime CTAs, outlined mastheads, ticker strips.
+   ============================================================ */
+
+/* Unbounded is WIDE — rescale display type */
+.h1{font-size:clamp(22px,3.4vw,38px);font-weight:800;line-height:1.04;letter-spacing:-.01em;text-shadow:none;}
+.h2{font-size:clamp(15px,1.9vw,22px);font-weight:800;}
+.covtag .nm{font-size:18px;font-weight:800;letter-spacing:0;}
+.summary .total .amt{font-size:22px;font-weight:800;}
+.featurecard .n{font-size:19px;font-weight:800;}
+.pstats .n{font-size:18px;font-weight:800;}
+.stat .box .n{font-size:18px;font-weight:800;}
+.stepper .val{font-size:20px;font-weight:800;}
+.timerbox .time{font-size:18px;font-weight:800;}
+.availability .a .n{font-size:15px;font-weight:800;}
+.eventcard .day .d1{font-size:13px;font-weight:800;}
+.pass .det .v{font-family:var(--body);font-weight:700;}
+.av{font-family:var(--body);font-weight:800;}
+.miniav{font-family:var(--body);font-weight:800;}
+.logo{font-weight:900;}
+
+/* ---- ACID LIME action system: primary = lime on black ---- */
+.btn{
+  background:var(--lime);color:#0A0A08;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 12px 36px -10px rgba(200,255,61,.45);
+  font-weight:700;letter-spacing:.01em;
+}
+@media (hover:hover){
+  .btn:hover:not([disabled]){transform:translateY(-1px);box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 16px 46px -10px rgba(200,255,61,.65);filter:none;}
+}
+.btn.ghost{background:var(--glass);color:var(--txt);box-shadow:var(--edge);}
+@media (hover:hover){ .btn.ghost:hover:not([disabled]){border-color:rgba(200,255,61,.45);box-shadow:var(--edge),0 10px 30px -12px rgba(200,255,61,.3);} }
+.btn.gold{background:linear-gradient(135deg,#FFC24B,#FF8A3D);}
+.send{background:var(--lime);color:#0A0A08;box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 10px 26px -8px rgba(200,255,61,.5);}
+.chip.on{background:var(--lime);color:#0A0A08;box-shadow:0 8px 22px -8px rgba(200,255,61,.55);}
+.tab.on{background:var(--lime);color:#0A0A08;box-shadow:0 10px 26px -8px rgba(200,255,61,.5);}
+.badge-n{background:var(--lime);color:#0A0A08;}
+.roleswitch button.on{background:var(--lime);color:#0A0A08;box-shadow:0 6px 18px -6px rgba(200,255,61,.55);}
+.locbtn.on{color:var(--lime);background:rgba(200,255,61,.08);border-color:rgba(200,255,61,.35);}
+.tog.on{background:var(--lime);}
+.splashbar i{background:linear-gradient(90deg,var(--magenta),var(--lime));}
+
+/* ---- masthead: giant outlined TONIGHT ---- */
+.masthead{margin-top:4px;}
+.mast-kicker{font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--lime);font-weight:700;}
+.mast-title{
+  font-family:var(--display);font-weight:900;text-transform:uppercase;
+  font-size:clamp(52px,10.5vw,104px);line-height:.98;margin-top:8px;
+  color:transparent;-webkit-text-stroke:2px rgba(245,240,250,.92);
+  filter:drop-shadow(0 0 28px rgba(255,61,174,.35));
+}
+.mast-sub{
+  font-family:var(--display);font-weight:800;text-transform:uppercase;
+  font-size:clamp(15px,2.6vw,22px);margin-top:10px;
+  background:linear-gradient(90deg,var(--magenta),var(--lime));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+
+/* ---- ticker strip ---- */
+.marquee{
+  overflow:hidden;margin:18px calc(-1 * clamp(16px,3vw,42px)) 2px;padding:11px 0;
+  border-top:1px solid rgba(200,255,61,.25);border-bottom:1px solid rgba(200,255,61,.25);
+  background:rgba(200,255,61,.05);transform:rotate(-1.4deg) scale(1.02);
+}
+.marquee-track{
+  display:inline-flex;white-space:nowrap;will-change:transform;
+  animation:marq 22s linear infinite;
+  font-family:var(--display);font-weight:600;font-size:12px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--lime);
+}
+.marquee-track>span{padding-right:40px;}
+@keyframes marq{to{transform:translateX(-50%);}}
+@media (prefers-reduced-motion: reduce){.marquee-track{animation:none;}}
+
+/* ---- poster cards ---- */
+.cover{height:210px;}
+.covtag .nm{font-size:20px;}
+.card{border-radius:26px;}
+@media (hover:hover){
+  .card:hover{transform:translateY(-6px) rotate(-.4deg);border-color:rgba(200,255,61,.4);
+    box-shadow:var(--edge),0 26px 64px -18px rgba(200,255,61,.28),0 24px 60px -18px rgba(255,61,174,.3),var(--lift);}
+}
+.pricefrom b{font-family:var(--display);font-weight:800;font-size:15px;}
+
+/* ---- pass header: VIP stripe ---- */
+.pass .head{
+  background:
+    repeating-linear-gradient(-45deg,rgba(200,255,61,.12) 0 14px,transparent 14px 28px),
+    linear-gradient(120deg,rgba(255,61,174,.3),rgba(122,77,255,.25));
+}
+
+/* ---- eyebrows get the lime treatment on key sections ---- */
+.bookbar .btn{font-size:15px;}
+.searchbar{border-radius:18px;}
+@media (max-width:760px){
+  .mast-title{-webkit-text-stroke:1.6px rgba(245,240,250,.92);}
+  .cover{height:190px;}
+}

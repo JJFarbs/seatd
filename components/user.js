@@ -304,8 +304,21 @@ export function Discover() {
     <>
       <OfflineBar />
       <div className="body enter"><div className="pad">
-        <div className="eyebrow">Out tonight — Joburg</div>
-        <div className="h1">{s.profile ? <>Where to,<br />{(people.me.name || '').split(' ')[0]}?</> : <>Find your<br />table</>}</div>
+        <div className="masthead">
+          <div className="mast-kicker" suppressHydrationWarning>
+            {new Date().toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' })} — Joburg
+          </div>
+          <div className="mast-title">Tonight</div>
+          <div className="mast-sub">{s.profile ? `Where to, ${(people.me.name || '').split(' ')[0]}?` : 'Find your table'}</div>
+        </div>
+        {(() => {
+          const names = venues.filter((v) => v.status === 'live').map((v) => v.name.toUpperCase()).join('  ●  ');
+          return names ? (
+            <div className="marquee" aria-hidden="true">
+              <div className="marquee-track"><span>{names}  ●  </span><span>{names}  ●  </span></div>
+            </div>
+          ) : null;
+        })()}
         <input className="searchbar" type="search" placeholder="Search clubs, areas, music..." style={{ marginTop: 14 }}
           value={s.clubSearch} onChange={(e) => mutate((x) => { x.clubSearch = e.target.value; })} />
         <div className="chips">{AREAS.map((a) => <div key={a} className={`chip ${s.area === a ? 'on' : ''}`} onClick={() => mutate((x) => { x.area = a; })}>{a}</div>)}</div>
