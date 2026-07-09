@@ -305,7 +305,7 @@ export function Discover() {
       <OfflineBar />
       <div className="body enter"><div className="pad">
         <div className="eyebrow">Out tonight — Joburg</div>
-        <div className="h1">Find your<br />table</div>
+        <div className="h1">{s.profile ? <>Where to,<br />{(people.me.name || '').split(' ')[0]}?</> : <>Find your<br />table</>}</div>
         <input className="searchbar" type="search" placeholder="Search clubs, areas, music..." style={{ marginTop: 14 }}
           value={s.clubSearch} onChange={(e) => mutate((x) => { x.clubSearch = e.target.value; })} />
         <div className="chips">{AREAS.map((a) => <div key={a} className={`chip ${s.area === a ? 'on' : ''}`} onClick={() => mutate((x) => { x.area = a; })}>{a}</div>)}</div>
