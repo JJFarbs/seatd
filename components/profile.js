@@ -190,14 +190,14 @@ export function LegalScreen() {
           <>
             <h3>What we collect</h3><p>Account details (name, handle, email), booking history, and payment tokens processed by our payment partners. We never store full card numbers.</p>
             <h3>How we use it</h3><p>To operate bookings, prevent fraud, and show venues anonymised crowd stats. We do not sell personal data.</p>
-            <h3>Your rights</h3><p>Request export or deletion of your data any time via privacy@seatd.app (POPIA compliant).</p>
+            <h3>Your rights</h3><p>Request export or deletion of your data any time via privacy@seatedbookings.com (POPIA compliant).</p>
           </>
         )}
         {page === 'contact' && (
           <>
             <h3>Talk to us</h3>
-            <p>Support: <a href="mailto:support@seatd.app" style={{ color: 'var(--blue)' }}>support@seatd.app</a></p>
-            <p>Venues &amp; partnerships: <a href="mailto:venues@seatd.app" style={{ color: 'var(--blue)' }}>venues@seatd.app</a></p>
+            <p>Support: <a href="mailto:support@seatedbookings.com" style={{ color: 'var(--blue)' }}>support@seatedbookings.com</a></p>
+            <p>Venues &amp; partnerships: <a href="mailto:venues@seatedbookings.com" style={{ color: 'var(--blue)' }}>venues@seatedbookings.com</a></p>
             <p>WhatsApp line: +27 10 555 0123 (Thu–Sun 18:00–04:00)</p>
             <p>Johannesburg HQ: 24 Central, Gwen Lane, Sandton.</p>
           </>

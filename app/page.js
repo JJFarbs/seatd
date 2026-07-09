@@ -1,6 +1,6 @@
 'use client';
 import { useEffect } from 'react';
-import { useApp, mutate, setRole, refreshExpiries, hydrateFromDb, initAuth, pollLive } from '@/lib/store';
+import { useApp, mutate, setRole, refreshExpiries, hydrateFromDb, initAuth, pollLive, captureDeepLink } from '@/lib/store';
 import { AuthView } from '@/components/auth';
 import { Discover, MapScreen, VenueScreen, BookingScreen, PayScreen, JoinPayScreen, StatusScreen, MyBookings, JoinedPassScreen } from '@/components/user';
 import { MessagesHome, FriendsScreen, FriendProfile, ChatScreen, GroupChatScreen } from '@/components/social';
@@ -58,6 +58,7 @@ export default function App() {
 
   // boot skeleton + load real data + restore login session
   useEffect(() => {
+    captureDeepLink();
     hydrateFromDb();
     initAuth();
     const t = setTimeout(() => mutate((x) => { x.booting = false; }), 700);

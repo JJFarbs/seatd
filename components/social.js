@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { useApp, mutate, people, venues, sendChat, addFriendFromDraft, copyText, addFriend, refreshChat, sendGroupChat, refreshGroup, clearUnread } from '@/lib/store';
+import { useApp, mutate, people, venues, sendChat, addFriendFromDraft, copyText, addFriend, refreshChat, sendGroupChat, refreshGroup, clearUnread, profileLink } from '@/lib/store';
 import { Icon, Av, Stars, Empty, OfflineBar } from './ui';
 import { UserTabbar, FriendSearch } from './user';
 
@@ -108,7 +108,7 @@ export function FriendProfile() {
   const dbMode = s.dbReady && !!s.session;
   const mutual = dbMode ? [] : s.friends.filter((id) => id !== p.id && people[id]).slice(0, 3);
   const memberSince = p.since ? new Date(p.since).toLocaleDateString('en-ZA', { month: 'short', year: 'numeric' }) : '—';
-  const link = `https://seatd.app/u/${p.handle.replace('@', '')}`;
+  const link = profileLink(p);
   const shareText = encodeURIComponent(`Join me on Seat'd — add ${p.handle}. ${link}`);
   const invite = () => {
     if (typeof navigator !== 'undefined' && navigator.share) navigator.share({ title: "Seat'd", text: `Add ${p.name} on Seat'd`, url: link }).catch(() => {});
