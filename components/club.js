@@ -1,12 +1,12 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Chart as ChartJS, registerables } from 'chart.js';
 import { Bar, Line } from 'react-chartjs-2';
 import { AREAS, tierMeta, fmt, serviceFee } from '@/lib/data';
 import {
   useApp, mutate, venues, venue, clubVenue, tablesFor, allPaid, paidCount,
   amountOutstanding, decide, scanNext, toast, syncVenueToDb, saveVenueLayout,
-  FLOOR_SLOTS, authSignOut,
+  FLOOR_SLOTS, authSignOut, saveVenueLocation,
 } from '@/lib/store';
 import { Icon, Empty, OfflineBar, Cover, Deadline } from './ui';
 import { PaymentRows } from './user';
@@ -193,6 +193,7 @@ function ClubManage() {
           <div className="featurecard"><div className="n">22:00</div><div className="l">Doors open</div></div>
         </div>
         <TableLayoutEditor v={v} />
+        <LocationPicker v={v} />
         <div className="summary">
           <div className="eyebrow">Upcoming events</div>
           {(v.events || []).length ? (v.events || []).map((e, i) => (
@@ -203,6 +204,52 @@ function ClubManage() {
       </div></div>
       <ClubTabbar />
     </>
+  );
+}
+
+// Location picker: tap (or drag the pin) to set where the venue sits on the map.
+function LocationPicker({ v }) {
+  const mapEl = useRef(null);
+  const mapObj = useRef(null);
+  const markerRef = useRef(null);
+  const posRef = useRef(null);
+  const [dirty, setDirty] = useState(false);
+  useEffect(() => {
+    let dead = false;
+    (async () => {
+      const L = (await import('leaflet')).default;
+      if (dead || !mapEl.current || mapObj.current) return;
+      const start = [v.lat || -26.1076, v.lng || 28.0567];
+      const map = L.map(mapEl.current, { zoomControl: true }).setView(start, v.lat ? 14 : 11);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap &copy; CARTO', maxZoom: 19,
+      }).addTo(map);
+      const icon = L.divIcon({
+        className: 'club-pin',
+        html: `<span class="club-pin-dot" style="--c:${v.g?.[0] || '#FF3DAE'}"></span><span class="club-pin-label">${v.name}</span>`,
+        iconSize: [12, 12], iconAnchor: [6, 6],
+      });
+      const marker = L.marker(start, { icon, draggable: true }).addTo(map);
+      marker.on('dragend', () => { const p = marker.getLatLng(); posRef.current = [p.lat, p.lng]; setDirty(true); });
+      map.on('click', (e) => { marker.setLatLng(e.latlng); posRef.current = [e.latlng.lat, e.latlng.lng]; setDirty(true); });
+      markerRef.current = marker;
+      mapObj.current = map;
+    })();
+    return () => { dead = true; if (mapObj.current) { mapObj.current.remove(); mapObj.current = null; } };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [v.id]);
+  return (
+    <div className="summary" style={{ maxWidth: 780 }}>
+      <div className="eyebrow">Venue location</div>
+      <div className="meta2" style={{ marginTop: 4 }}>Tap the map (or drag the pin) to where your club actually is — guests see this on the city map.</div>
+      <div className="mapwrap" style={{ marginTop: 12, height: 260, position: 'relative', overflow: 'hidden', padding: 0, maxWidth: 'none' }}>
+        <div ref={mapEl} style={{ position: 'absolute', inset: 0, borderRadius: 22 }} />
+      </div>
+      <button className="btn sm" style={{ marginTop: 12 }} disabled={!dirty}
+        onClick={() => { if (posRef.current) { saveVenueLocation(v, posRef.current[0], posRef.current[1]); setDirty(false); } }}>
+        {dirty ? 'Save location' : v.lat ? 'Location set' : 'Tap the map to place your pin'}
+      </button>
+    </div>
   );
 }
 

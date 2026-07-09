@@ -20,7 +20,7 @@ export async function PATCH(req) {
   const body = await req.json();
   const { id, ...fields } = body;
   if (!id) return Response.json({ error: 'id required' }, { status: 400 });
-  const allowed = ['name', 'area', 'genre', 'tagline', 'dress', 'parking', 'open_hours', 'vip', 'status', 'when_label', 'min_from', 'capacity', 'menu', 'events', 'layout'];
+  const allowed = ['name', 'area', 'genre', 'tagline', 'dress', 'parking', 'open_hours', 'vip', 'status', 'when_label', 'min_from', 'capacity', 'menu', 'events', 'layout', 'lat', 'lng'];
   const update = {};
   for (const k of allowed) if (k in fields) update[k] = fields[k];
   const { error } = await client.from('venues').update(update).eq('id', id);
