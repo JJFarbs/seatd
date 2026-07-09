@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { useApp, mutate, people, venues, sendChat, addFriendFromDraft, copyText, addFriend, refreshChat } from '@/lib/store';
+import { useApp, mutate, people, venues, sendChat, addFriendFromDraft, copyText, addFriend, refreshChat, sendGroupChat, refreshGroup, clearUnread } from '@/lib/store';
 import { Icon, Av, Stars, Empty, OfflineBar } from './ui';
 import { UserTabbar, FriendSearch } from './user';
 
@@ -16,18 +16,32 @@ export function MessagesHome() {
           <button className="btn sm ghost" style={{ width: 'auto', padding: '10px 14px' }} onClick={() => mutate((x) => { x.screen = 'friends'; x.friendDraft = ''; })}>Friends — {s.friends.length}</button>
         </div>
         <div className="stagger" style={{ marginTop: 8 }}>
+          {s.groups.map((g) => {
+            const last = g.msgs[g.msgs.length - 1];
+            const un = s.unread['g:' + g.id] || 0;
+            return (
+              <div className="lrow" key={g.id} onClick={() => { clearUnread('g:' + g.id); mutate((x) => { x.activeGroup = g.id; x.screen = 'groupchat'; }); }}>
+                <div className="av" style={{ width: 44, height: 44, fontSize: 20, background: 'linear-gradient(135deg,var(--gold),var(--magenta))' }}>🍾</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="row"><span className="nm">{g.name}</span>{un ? <span className="badge" style={{ background: 'var(--magenta)', color: '#0B0710' }}>{un}</span> : null}</div>
+                  <div className="meta2" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{last ? `${last.f === 'me' ? 'You' : last.name}: ${last.t}` : 'Table group'}</div>
+                </div>
+              </div>
+            );
+          })}
           {convos.length ? convos.map((id) => {
             const p = people[id], last = s.convos[id][s.convos[id].length - 1];
+            const un = s.unread['c:' + id] || 0;
             return (
-              <div className="lrow" key={id} onClick={() => mutate((x) => { x.activeChat = id; x.screen = 'chat'; })}>
+              <div className="lrow" key={id} onClick={() => { clearUnread('c:' + id); mutate((x) => { x.activeChat = id; x.screen = 'chat'; }); }}>
                 <Av p={p} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div className="row"><span className="nm">{p.name}</span></div>
+                  <div className="row"><span className="nm">{p.name}</span>{un ? <span className="badge" style={{ background: 'var(--magenta)', color: '#0B0710' }}>{un}</span> : null}</div>
                   <div className="meta2" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{last.f === 'me' ? 'You: ' : ''}{last.t}</div>
                 </div>
               </div>
             );
-          }) : <Empty>No messages yet.<br />Add friends to start a thread.</Empty>}
+          }) : (s.groups.length ? null : <Empty>No messages yet.<br />Add friends to start a thread.</Empty>)}
         </div>
       </div></div>
       <UserTabbar />
@@ -163,6 +177,47 @@ export function FriendProfile() {
   );
 }
 
+export function GroupChatScreen() {
+  const s = useApp();
+  const g = s.groups.find((x) => x.id === s.activeGroup);
+  const [draft, setDraft] = useState('');
+  const bodyRef = useRef(null);
+  const msgs = g ? g.msgs : [];
+  useEffect(() => { if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight; }, [msgs.length]);
+  useEffect(() => {
+    if (!s.activeGroup) return;
+    clearUnread('g:' + s.activeGroup);
+    const t = setInterval(() => refreshGroup(s.activeGroup), 4000);
+    return () => clearInterval(t);
+  }, [s.activeGroup]);
+  if (!g) return <MessagesHome />;
+  const doSend = () => { if (draft.trim()) { sendGroupChat(g.id, draft); setDraft(''); } };
+  return (
+    <>
+      <div className="topbar">
+        <button className="back" aria-label="Back" onClick={() => mutate((x) => { x.screen = 'home'; x.tab = 'messages'; })}><Icon name="back" size={22} stroke={2.8} /></button>
+        <div className="av" style={{ width: 38, height: 38, fontSize: 17, background: 'linear-gradient(135deg,var(--gold),var(--magenta))' }}>🍾</div>
+        <div><div className="nm" style={{ fontWeight: 700 }}>{g.name}</div><div className="meta2" style={{ fontSize: 12 }}>table group chat</div></div>
+      </div>
+      <div className="chatbody" ref={bodyRef}>
+        {msgs.length ? msgs.map((m, i) => (
+          <div key={i} style={{ alignSelf: m.f === 'me' ? 'flex-end' : 'flex-start', maxWidth: '78%' }}>
+            {m.f === 'them' && (!msgs[i - 1] || msgs[i - 1].name !== m.name || msgs[i - 1].f === 'me') && (
+              <div className="meta2" style={{ fontSize: 11, margin: '4px 0 2px 6px' }}>{m.name}</div>
+            )}
+            <div className={`bub ${m.f} pop`} style={{ maxWidth: 'none' }}>{m.t}</div>
+          </div>
+        )) : <div className="empty">Say hi to the table 👋</div>}
+      </div>
+      <div className="composer">
+        <input placeholder={`Message ${g.name}...`} aria-label="Message" value={draft}
+          onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') doSend(); }} />
+        <button className="send" aria-label="Send" onClick={doSend}><Icon name="arrow" size={20} stroke={2.5} /></button>
+      </div>
+    </>
+  );
+}
+
 export function ChatScreen() {
   const s = useApp();
   const p = people[s.activeChat];
@@ -170,6 +225,7 @@ export function ChatScreen() {
   const bodyRef = useRef(null);
   const msgs = (p && s.convos[s.activeChat]) || [];
   useEffect(() => { if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight; }, [msgs.length]);
+  useEffect(() => { if (s.activeChat) clearUnread('c:' + s.activeChat); }, [s.activeChat, msgs.length]);
   // poll for the other person's replies while the chat is open
   useEffect(() => {
     if (!(s.dbReady && s.session && s.activeChat)) return;

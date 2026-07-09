@@ -3,12 +3,12 @@ import { useEffect } from 'react';
 import { useApp, mutate, setRole, refreshExpiries, hydrateFromDb, initAuth, pollLive } from '@/lib/store';
 import { AuthView } from '@/components/auth';
 import { Discover, MapScreen, VenueScreen, BookingScreen, PayScreen, JoinPayScreen, StatusScreen, MyBookings, JoinedPassScreen } from '@/components/user';
-import { MessagesHome, FriendsScreen, FriendProfile, ChatScreen } from '@/components/social';
+import { MessagesHome, FriendsScreen, FriendProfile, ChatScreen, GroupChatScreen } from '@/components/social';
 import { ProfileScreen, EditProfile, NotifScreen, LegalScreen, NotFound } from '@/components/profile';
 import { ClubView } from '@/components/club';
 import { AdminView } from '@/components/admin';
 
-const USER_SCREENS = ['home', 'venue', 'booking', 'pay', 'joinpay', 'joinpass', 'status', 'editprofile', 'notifs', 'legal', 'chat', 'friends', 'friendprofile', 'signup'];
+const USER_SCREENS = ['home', 'venue', 'booking', 'pay', 'joinpay', 'joinpass', 'status', 'editprofile', 'notifs', 'legal', 'chat', 'groupchat', 'friends', 'friendprofile', 'signup'];
 
 function Skeleton() {
   return (
@@ -43,6 +43,7 @@ function Screen() {
   if (s.screen === 'editprofile') return <EditProfile />;
   if (s.screen === 'notifs') return <NotifScreen />;
   if (s.screen === 'chat') return <ChatScreen />;
+  if (s.screen === 'groupchat') return <GroupChatScreen />;
   if (s.screen === 'friends') return <FriendsScreen />;
   if (s.screen === 'friendprofile') return <FriendProfile />;
   if (s.tab === 'bookings') return <MyBookings />;

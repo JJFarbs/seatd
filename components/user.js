@@ -24,11 +24,12 @@ export function UserTabbar() {
       + s.publicTables.filter((pt) => (pt.joiners || []).some((j) => j.id === uid)).length
     : s.dbReady ? 0 : s.requests.filter((r) => r.who === 'You' && (r.status === 'confirmed' || r.status === 'checkedin')).length;
   const unread = s.notifs.filter((n) => n.unread).length;
+  const unreadChats = Object.values(s.unread || {}).reduce((a, b) => a + b, 0);
   const tabs = [
     ['discover', 'bolt', 'Tonight', 0],
     ['map', 'map', 'Map', 0],
     ['bookings', 'ticket', 'Bookings', myReq],
-    ['messages', 'chat', 'Chats', 0],
+    ['messages', 'chat', 'Chats', unreadChats],
     ['profile', 'user', 'Profile', unread],
   ];
   return (
