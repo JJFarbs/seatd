@@ -11,6 +11,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
     "chart.js": "^4.4.1",
+    "html5-qrcode": "^2.3.8",
     "leaflet": "^1.9.4",
     "next": "^14.2.35",
     "qrcode.react": "^3.1.0",

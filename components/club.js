@@ -6,7 +6,7 @@ import { AREAS, tierMeta, fmt, serviceFee } from '@/lib/data';
 import {
   useApp, mutate, venues, venue, clubVenue, tablesFor, allPaid, paidCount,
   amountOutstanding, decide, scanNext, toast, syncVenueToDb, saveVenueLayout,
-  FLOOR_SLOTS, authSignOut, saveVenueLocation,
+  FLOOR_SLOTS, authSignOut, saveVenueLocation, processScan,
 } from '@/lib/store';
 import { Icon, Empty, OfflineBar, Cover, Deadline } from './ui';
 import { PaymentRows } from './user';
@@ -315,6 +315,39 @@ function StaffMode() {
   const s = useApp();
   const v = clubVenue();
   const list = s.requests.filter((r) => r.vid === v.id && (r.status === 'confirmed' || r.status === 'checkedin'));
+  const [scanning, setScanning] = useState(false);
+  const [camErr, setCamErr] = useState(null);
+  const [result, setResult] = useState(null);
+  const qrRef = useRef(null);
+  const lastRef = useRef({ ref: '', t: 0 });
+
+  const stopScanner = async () => {
+    try { await qrRef.current?.stop(); qrRef.current?.clear(); } catch (_e) {}
+    qrRef.current = null;
+    setScanning(false);
+  };
+  const onDecoded = (text) => {
+    const now = Date.now();
+    // ignore the same code re-read within 4 seconds (cameras fire continuously)
+    if (text === lastRef.current.ref && now - lastRef.current.t < 4000) return;
+    lastRef.current = { ref: text, t: now };
+    setResult(processScan(text));
+  };
+  const startScanner = async () => {
+    setCamErr(null); setResult(null);
+    try {
+      const { Html5Qrcode } = await import('html5-qrcode');
+      const q = new Html5Qrcode('qr-reader');
+      qrRef.current = q;
+      await q.start({ facingMode: 'environment' }, { fps: 8, qrbox: { width: 220, height: 220 } }, onDecoded, () => {});
+      setScanning(true);
+    } catch (e) {
+      setCamErr(e?.message || 'Camera unavailable — allow camera access and use HTTPS');
+      setScanning(false);
+    }
+  };
+  useEffect(() => () => { stopScanner(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
     <>
       <OfflineBar />
@@ -323,13 +356,23 @@ function StaffMode() {
         <ClubSelector />
         <div className="scanbox">
           <div className="eyebrow">QR scanner</div>
-          <div className="scanframe" />
-          <button className="btn" style={{ maxWidth: 300, margin: '0 auto' }} onClick={scanNext}>Scan next pass</button>
-          {s.scannerResult && (
-            <div className="summary" style={{ marginTop: 14, textAlign: 'left' }}>
-              <div className="minirow"><span>Result</span><b style={{ color: 'var(--ok)' }}>VALID — CHECKED IN</b></div>
-              <div className="minirow"><span>Booking</span><b>{s.scannerResult}</b></div>
-              <div className="minirow"><span>Action</span><b>Send to table</b></div>
+          <div id="qr-reader" style={{ width: '100%', maxWidth: 340, margin: scanning ? '12px auto' : '0 auto', borderRadius: 18, overflow: 'hidden' }} />
+          {!scanning && <div className="scanframe" />}
+          <button className="btn" style={{ maxWidth: 300, margin: '0 auto' }} onClick={scanning ? stopScanner : startScanner}>
+            {scanning ? 'Stop camera' : 'Open camera scanner'}
+          </button>
+          {camErr && <div className="meta2" style={{ marginTop: 10, color: 'var(--warn)' }}>{camErr}</div>}
+          <button className="btn sm ghost" style={{ maxWidth: 300, margin: '10px auto 0' }} onClick={scanNext}>Simulate a check-in (demo)</button>
+          {result && (
+            <div className="summary" style={{ marginTop: 14, textAlign: 'left', borderColor: result.ok ? 'rgba(63,224,160,.5)' : result.already ? 'rgba(255,194,75,.5)' : 'rgba(255,107,107,.5)' }}>
+              <div className="minirow"><span>Result</span>
+                <b style={{ color: result.ok ? 'var(--ok)' : result.already ? 'var(--gold)' : 'var(--warn)' }}>
+                  {result.ok ? '✓ VALID — CHECKED IN' : result.already ? '⚠ ALREADY CHECKED IN' : '✕ NOT VALID'}
+                </b></div>
+              {result.name && <div className="minirow"><span>Guest</span><b>{result.name}{result.party ? ` · ${result.party} guests` : ''}</b></div>}
+              {result.table && <div className="minirow"><span>Table</span><b>{result.table}</b></div>}
+              <div className="minirow"><span>Ref</span><b>{result.ref}</b></div>
+              <div className="minirow"><span>Action</span><b>{result.ok ? result.msg : result.msg}</b></div>
             </div>
           )}
         </div>
