@@ -49,7 +49,12 @@ export function Av({ p, size = 44 }) {
   const f = Math.round(size * 0.42);
   return (
     <div className="pos" style={{ width: size, height: size }}>
-      <div className="av" style={{ width: size, height: size, fontSize: f, background: `linear-gradient(135deg,${p.g[0]},${p.g[1]})` }}>{initials(p.name)}</div>
+      <div className="av" style={{ width: size, height: size, fontSize: f, background: `linear-gradient(135deg,${p.g[0]},${p.g[1]})`, overflow: 'hidden' }}>
+        {p.avatar
+          // eslint-disable-next-line @next/next/no-img-element
+          ? <img src={p.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+          : initials(p.name)}
+      </div>
       {p.online ? <span className="online" /> : null}
     </div>
   );

@@ -1,7 +1,7 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { todayStr } from '@/lib/data';
-import { useApp, mutate, people, toast, authSignOut, saveProfileToDb, readAllNotifs } from '@/lib/store';
+import { useApp, mutate, people, toast, authSignOut, saveProfileToDb, readAllNotifs, uploadAvatar } from '@/lib/store';
 import { Icon, Av, Empty, LogoMark, OfflineBar } from './ui';
 import { UserTabbar } from './user';
 
@@ -85,11 +85,21 @@ export function ProfileScreen() {
 }
 
 export function EditProfile() {
-  useApp();
+  const s = useApp();
   const m = people.me;
   const [name, setName] = useState(m.name);
   const [handle, setHandle] = useState(m.handle);
   const [bio, setBio] = useState(m.bio);
+  const [busy, setBusy] = useState(false);
+  const fileRef = useRef(null);
+  const pickPhoto = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setBusy(true);
+    await uploadAvatar(file);
+    setBusy(false);
+  };
   return (
     <>
       <div className="topbar">
@@ -99,7 +109,11 @@ export function EditProfile() {
       <div className="body enter"><div className="pad" style={{ maxWidth: 680 }}>
         <div style={{ display: 'flex', justifyContent: 'center', margin: '6px 0 4px' }}><Av p={m} size={84} /></div>
         <div style={{ textAlign: 'center' }}>
-          <button className="btn sm ghost" style={{ width: 'auto', padding: '8px 16px', margin: '8px auto 0' }} onClick={() => toast('Photo upload lands with the production build')}>Change photo</button>
+          <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={pickPhoto} />
+          <button className="btn sm ghost" style={{ width: 'auto', padding: '8px 16px', margin: '8px auto 0' }} disabled={busy || !s.session}
+            onClick={() => fileRef.current?.click()}>
+            {busy ? 'Uploading…' : s.session ? 'Change photo' : 'Log in to set a photo'}
+          </button>
         </div>
         <div className="field"><label>Name</label><input className="input" value={name} onChange={(e) => setName(e.target.value)} /></div>
         <div className="field"><label>Username</label><input className="input" value={handle} onChange={(e) => setHandle(e.target.value)} /></div>

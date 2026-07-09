@@ -645,3 +645,28 @@ details.faq{background:linear-gradient(180deg,rgba(30,23,41,.5),rgba(15,11,21,.9
 .marq-item:hover{color:#fff;text-shadow:0 0 14px rgba(200,255,61,.8);}
 .marq-dot{padding:0 18px;opacity:.5;}
 .marquee:hover .marquee-track,.marquee:active .marquee-track{animation-play-state:paused;}
+
+/* ---- real map (Leaflet) ---- */
+.leaflet-container{background:#0a0710;font-family:var(--body);}
+.club-pin{background:none;border:none;}
+.club-pin-dot{
+  display:block;width:14px;height:14px;border-radius:50%;
+  background:var(--c,#FF3DAE);border:2px solid rgba(255,255,255,.85);
+  box-shadow:0 0 14px var(--c,#FF3DAE),0 0 30px var(--c,#FF3DAE);
+  animation:pinpulse 1.8s ease-in-out infinite;cursor:pointer;
+}
+@keyframes pinpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.25)}}
+.club-pin-label{
+  position:absolute;left:18px;top:-4px;white-space:nowrap;cursor:pointer;
+  font-family:var(--display);font-weight:600;font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+  color:#F5F0FA;background:rgba(10,7,16,.85);border:1px solid rgba(255,255,255,.14);
+  padding:4px 8px;border-radius:8px;backdrop-filter:blur(8px);
+}
+.map-locate{
+  background:var(--lime);color:#0A0A08;border:0;border-radius:12px;cursor:pointer;
+  font-family:var(--body);font-weight:700;font-size:12px;padding:9px 12px;margin:10px;
+  box-shadow:0 8px 22px -8px rgba(200,255,61,.6);
+}
+.leaflet-control-zoom a{background:rgba(20,14,28,.9)!important;color:#F5F0FA!important;border-color:rgba(255,255,255,.1)!important;}
+.leaflet-control-attribution{background:rgba(10,7,16,.7)!important;color:#7a7090!important;font-size:9px!important;}
+.leaflet-control-attribution a{color:#9A8FB0!important;}

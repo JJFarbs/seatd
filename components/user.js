@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { AREAS, GENRES, tierMeta, fmt, serviceFee, searchClubs, todayStr } from '@/lib/data';
 import {
@@ -362,32 +362,58 @@ export function Discover() {
   );
 }
 
-// ---------- map ----------
+// ---------- map (real: Leaflet + OpenStreetMap dark tiles) ----------
 export function MapScreen() {
   useApp();
   const live = venues.filter((v) => v.status === 'live');
   const openVenue = (id) => mutate((x) => { x.venueId = id; x.selTable = null; x.venueTab = 'tables'; x.screen = 'venue'; });
+  const mapEl = useRef(null);
+  const mapObj = useRef(null);
+  useEffect(() => {
+    let dead = false;
+    (async () => {
+      const L = (await import('leaflet')).default;
+      if (dead || !mapEl.current || mapObj.current) return;
+      const map = L.map(mapEl.current, { zoomControl: false }).setView([-26.17, 28.01], 11);
+      L.control.zoom({ position: 'bottomright' }).addTo(map);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap &copy; CARTO', maxZoom: 19,
+      }).addTo(map);
+      venues.filter((v) => v.status === 'live' && v.lat && v.lng).forEach((v) => {
+        const icon = L.divIcon({
+          className: 'club-pin',
+          html: `<span class="club-pin-dot" style="--c:${v.g[0]}"></span><span class="club-pin-label">${v.name}</span>`,
+          iconSize: [12, 12], iconAnchor: [6, 6],
+        });
+        L.marker([v.lat, v.lng], { icon }).addTo(map).on('click', () => openVenue(v.id));
+      });
+      mapObj.current = map;
+      // "find me" control
+      const locBtn = L.control({ position: 'topright' });
+      locBtn.onAdd = () => {
+        const b = L.DomUtil.create('button', 'map-locate');
+        b.innerHTML = '◎ Find me';
+        b.onclick = (e) => {
+          e.preventDefault(); e.stopPropagation();
+          navigator.geolocation?.getCurrentPosition((pos) => {
+            const here = [pos.coords.latitude, pos.coords.longitude];
+            L.circleMarker(here, { radius: 8, color: '#C8FF3D', fillColor: '#C8FF3D', fillOpacity: 0.9 }).addTo(map);
+            map.setView(here, 13);
+          });
+        };
+        return b;
+      };
+      locBtn.addTo(map);
+    })();
+    return () => { dead = true; if (mapObj.current) { mapObj.current.remove(); mapObj.current = null; } };
+  }, []);
   return (
     <>
       <OfflineBar />
       <div className="body enter"><div className="pad">
         <div className="h1" style={{ fontSize: 28 }}>Map</div>
-        <div className="mapwrap" style={{ marginTop: 14, height: 250, position: 'relative', background: 'linear-gradient(160deg,#100B17,#0B0710)' }}>
-          <svg viewBox="0 0 340 230" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
-            <path d="M20 120 H320 M170 20 V210 M60 60 L300 180" stroke="#241d30" strokeWidth="2" fill="none" />
-            {live.map((v, i) => {
-              const x = 50 + (v.dist * 9) % 260, y = 40 + (i * 38) % 160;
-              return (
-                <g key={v.id} style={{ cursor: 'pointer' }} onClick={() => openVenue(v.id)}>
-                  <circle className="ping" cx={x} cy={y} r="8" fill={v.g[0]} />
-                  <circle cx={x} cy={y} r="7" fill={v.g[0]} />
-                  <text x={x + 12} y={y + 4} fontFamily="Inter" fontSize="10" fontWeight="700" fill="#F5F0FA">{v.name}</text>
-                </g>
-              );
-            })}
-            <circle cx="170" cy="120" r="6" fill="#fff" /><circle className="ping" cx="170" cy="120" r="6" fill="#fff" />
-            <text x="170" y="146" textAnchor="middle" fontFamily="Inter" fontSize="9" fill="#9A8FB0">You — Sandton</text>
-          </svg>
+        <div className="mapwrap" style={{ marginTop: 14, height: 340, position: 'relative', overflow: 'hidden', padding: 0 }}>
+          <div ref={mapEl} style={{ position: 'absolute', inset: 0, borderRadius: 22 }} />
         </div>
         <div className="stagger" style={{ marginTop: 16 }}>
           {[...live].sort((a, b) => a.dist - b.dist).map((v) => (
