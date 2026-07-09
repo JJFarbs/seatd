@@ -20,9 +20,21 @@ export function ProfileScreen() {
           <div className="sub">{m.handle}{s.session ? ` · ${s.session.user.email}` : ' · guest'}</div>
           <div className="sub" style={{ maxWidth: 280, margin: '8px auto 0' }}>{m.bio}</div>
           <div className="pstats">
-            <div className="b"><div className="n">{m.nights}</div><div className="l">Nights out</div></div>
-            <div className="b"><div className="n">{m.tables}</div><div className="l">Tables</div></div>
-            <div className="b"><div className="n">{m.crew}</div><div className="l">Crew</div></div>
+            {(() => {
+              const uid = s.session?.user?.id;
+              const mineB = uid ? s.requests.filter((r) => r.userId === uid) : [];
+              // real stats from your actual activity — demo numbers only without a database
+              const stats = s.dbReady
+                ? { nights: mineB.filter((r) => r.status === 'checkedin').length, tables: mineB.filter((r) => r.status === 'confirmed' || r.status === 'checkedin').length, crew: s.friends.length }
+                : { nights: m.nights, tables: m.tables, crew: m.crew };
+              return (
+                <>
+                  <div className="b"><div className="n">{stats.nights}</div><div className="l">Nights out</div></div>
+                  <div className="b"><div className="n">{stats.tables}</div><div className="l">Tables</div></div>
+                  <div className="b"><div className="n">{stats.crew}</div><div className="l">Crew</div></div>
+                </>
+              );
+            })()}
           </div>
           <div className="promobox" style={{ textAlign: 'left', marginLeft: 'auto', marginRight: 'auto', maxWidth: 560 }}>
             <div className="row">
@@ -37,7 +49,7 @@ export function ProfileScreen() {
               <div className="n">{s.favs.length}</div><div className="l">Favourite clubs</div>
             </div>
             <div className="featurecard" style={{ cursor: 'pointer' }} onClick={() => mutate((x) => { x.tab = 'bookings'; x.screen = 'home'; })}>
-              <div className="n">{s.requests.filter((r) => r.who === 'You').length}</div><div className="l">Bookings</div>
+              <div className="n">{s.session ? s.requests.filter((r) => r.userId === s.session.user.id).length : s.dbReady ? 0 : s.requests.filter((r) => r.who === 'You').length}</div><div className="l">Bookings</div>
             </div>
           </div>
           <div className="setrow" style={{ cursor: 'pointer' }} onClick={() => mutate((x) => { x.screen = 'notifs'; })}>

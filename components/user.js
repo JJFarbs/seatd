@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
-import { AREAS, GENRES, tierMeta, fmt, serviceFee, searchClubs } from '@/lib/data';
+import { AREAS, GENRES, tierMeta, fmt, serviceFee, searchClubs, todayStr } from '@/lib/data';
 import {
   S, useApp, mutate, venues, people, venue, tablesFor, bookingMath, paidCount,
   amountOutstanding, allPaid, adjustedShareAmount, tableCostRecovered, publicTableForBooking,
@@ -18,7 +18,11 @@ import {
 // ---------- tabbar ----------
 export function UserTabbar() {
   const s = useApp();
-  const myReq = s.requests.filter((r) => r.who === 'You' && (r.status === 'confirmed' || r.status === 'checkedin')).length;
+  const uid = s.session?.user?.id;
+  const myReq = uid
+    ? s.requests.filter((r) => r.userId === uid && (r.status === 'confirmed' || r.status === 'checkedin')).length
+      + s.publicTables.filter((pt) => (pt.joiners || []).some((j) => j.id === uid)).length
+    : s.dbReady ? 0 : s.requests.filter((r) => r.who === 'You' && (r.status === 'confirmed' || r.status === 'checkedin')).length;
   const unread = s.notifs.filter((n) => n.unread).length;
   const tabs = [
     ['discover', 'bolt', 'Tonight', 0],
@@ -805,12 +809,36 @@ export function MyBookings() {
   const mine = s.requests.filter((r) =>
     uid ? (r.userId === uid || (r.payments || []).some((p) => p.id === uid))
       : !s.dbReady && (r.who === 'You' || (r.payments || []).some((p) => p.id === 'host' && p.name === people.me.name)));
+  // tables you've paid to join
+  const myJoins = uid
+    ? s.publicTables.flatMap((pt) => (pt.joinRequests || []).filter((j) => j.userId === uid && j.status !== 'denied').map((j) => ({ pt, j })))
+    : [];
   return (
     <>
       <OfflineBar />
       <div className="body enter"><div className="pad">
         <div className="h1" style={{ fontSize: 28 }}>My<br />bookings</div>
         <div className="sub" style={{ marginTop: 6 }}>Track your table, who has paid, countdowns, and booking references.</div>
+        {myJoins.length > 0 && (
+          <div className="stagger" style={{ marginTop: 16 }}>
+            {myJoins.map(({ pt, j }) => (
+              <div className="req" key={j.id}>
+                <div className="row">
+                  <div>
+                    <div className="nm" style={{ fontSize: 17, fontWeight: 800 }}>{pt.venue} — {pt.table}</div>
+                    <div className="meta2">Joined table · hosted by {pt.owner} · {fmt(j.amount)} paid</div>
+                  </div>
+                  {j.status === 'approved'
+                    ? <StatusChip st="confirmed" />
+                    : <span className="badge" style={{ background: 'rgba(255,194,75,.15)', color: 'var(--gold)' }}>WAITING FOR HOST</span>}
+                </div>
+                {j.status === 'approved' && (
+                  <button className="btn sm" style={{ marginTop: 14 }} onClick={() => mutate((x) => { x.activeJoinPass = { ptId: pt.id, jrId: j.id }; x.screen = 'joinpass'; })}>Open pass</button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
         <div className="stagger" style={{ marginTop: 16 }}>
           {mine.length ? mine.map((r) => {
             const confirmed = r.status === 'confirmed' || r.status === 'checkedin';
@@ -852,9 +880,62 @@ export function MyBookings() {
                 </div>
               </div>
             );
-          }) : <Empty>No bookings yet.<br />Book a table and it will appear here with payment tracking and your reference.</Empty>}
+          }) : (myJoins.length ? null : <Empty>No bookings yet.<br />Book a table and it will appear here with payment tracking and your reference.</Empty>)}
         </div>
       </div></div>
+      <UserTabbar />
+    </>
+  );
+}
+
+// Pass for someone who joined another person's public table
+export function JoinedPassScreen() {
+  const s = useApp();
+  const ap = s.activeJoinPass || {};
+  const pt = s.publicTables.find((x) => x.id === ap.ptId);
+  const j = pt && (pt.joinRequests || []).find((x) => x.id === ap.jrId);
+  if (!pt || !j) return <MyBookings />;
+  const hostBooking = s.requests.find((r) => r.id === pt.bookingId);
+  const ref = 'JN-' + String(j.id).replace(/[^a-z0-9]/gi, '').slice(-6).toUpperCase();
+  const payload = JSON.stringify({ ref, club: pt.venue, date: hostBooking?.date || todayStr(), table: pt.table, guest: j.name, host: pt.owner });
+  return (
+    <>
+      <div className="topbar">
+        <button className="back" aria-label="Back" onClick={() => mutate((x) => { x.screen = 'home'; x.tab = 'bookings'; })}><Icon name="back" size={22} stroke={2.8} /></button>
+        <div className="h2" style={{ fontSize: 20 }}>Table pass</div>
+      </div>
+      <div className="body enter">
+        <div className="center" style={{ flex: 'none', padding: '18px 30px 6px' }}>
+          <div className="checkwrap pop"><CheckBig /></div>
+          <div className="h2" style={{ marginTop: 14 }}>You&apos;re on the list</div>
+          <div style={{ marginTop: 6 }}><StatusChip st="confirmed" /></div>
+          <div className="sub" style={{ marginTop: 6 }}>{pt.owner} approved you for their table</div>
+        </div>
+        <div className="pass enter">
+          <div className="head">
+            <div className="row">
+              <div className="covtag nm" style={{ fontSize: 22, position: 'static', maxWidth: 'none' }}>{pt.venue}</div>
+              <span className="pill" style={{ background: tierMeta[pt.tier]?.color || 'var(--blue)', color: '#0B0710' }}>{tierMeta[pt.tier]?.label || 'Table'}</span>
+            </div>
+            <div className="sub" style={{ fontSize: 13, marginTop: 4 }}>{hostBooking?.date || todayStr()} · joined table</div>
+          </div>
+          <div className="qr"><div className="qrbox"><QRCodeCanvas value={payload} size={140} bgColor="#F5F0FA" fgColor="#0B0710" level="M" /></div></div>
+          <div className="det">
+            <div><div className="k">Table</div><div className="v">{pt.table}</div></div>
+            <div><div className="k">Host</div><div className="v">{pt.owner}</div></div>
+            <div><div className="k">You paid</div><div className="v">{fmt(j.amount)}</div></div>
+            <div><div className="k">Pass ref</div><div className="v">{ref}</div></div>
+          </div>
+        </div>
+        <div className="bypass">
+          <div className="ico">✓</div>
+          <div>
+            <div style={{ fontWeight: 800, fontSize: 14 }}>Queue bypass enabled</div>
+            <div className="meta2">Use the Seat&apos;d lane and mention the host&apos;s table.</div>
+          </div>
+        </div>
+        <div className="pad"><div className="micro" style={{ textAlign: 'center', maxWidth: 560, margin: '10px auto 0' }}>Show this at the door. Your payment is credited to the table tab.</div></div>
+      </div>
       <UserTabbar />
     </>
   );
