@@ -180,10 +180,63 @@ export function LegalScreen() {
       <div className="body enter"><div className="pad legalbody">
         {page === 'terms' && (
           <>
-            <h3>1. The service</h3><p>Seat&apos;d connects nightlife venues with guests who prebook tables and prepay minimum spend. Seat&apos;d is a booking platform, not the venue — entry decisions remain with the venue.</p>
-            <h3>2. Payments &amp; refunds</h3><p>Table minimum spend plus a 5% Seat&apos;d service charge is collected upfront. If a venue declines your request, you are refunded in full within 3–5 business days. Auto-cancelled split payments are refunded to each payer.</p>
-            <h3>3. Conduct</h3><p>You must be 18 or older. Venues may refuse entry for intoxication, dress code, or safety reasons without refund of consumed credit.</p>
-            <h3>4. Promoters</h3><p>Promoter codes track commissions payable by venues, not by guests. Abuse of codes may lead to account suspension.</p>
+            <p className="meta2" style={{ marginBottom: 6 }}>Effective date: {todayStr()}</p>
+            <h3>1. Agreement to these terms</h3>
+            <p>These Terms of Service (&quot;Terms&quot;) govern your access to and use of the Seat&apos;d website, mobile experience and related services (together, the &quot;Service&quot;), operated from South Africa. By creating an account, browsing clubs, booking a table, buying a ticket, or otherwise using the Service, you agree to be bound by these Terms. If you do not agree, do not use the Service.</p>
+
+            <h3>2. What Seat&apos;d is (and isn&apos;t)</h3>
+            <p>Seat&apos;d is a booking platform that connects guests with independent nightlife venues (&quot;Venues&quot;) for the purpose of reserving tables and purchasing single-entry tickets. Seat&apos;d is not a Venue, does not own or operate any club, and is not responsible for the premises, staff, music, décor, alcohol service, or entry decisions of any Venue. Each Venue is solely responsible for its own compliance with liquor licensing, health and safety, fire, and other applicable laws.</p>
+
+            <h3>3. Eligibility &amp; accounts</h3>
+            <p>You must be at least 18 years old to create an account or use the Service, in line with the legal drinking age in South Africa. You are responsible for the accuracy of the information you provide, for keeping your login credentials confidential, and for all activity that occurs under your account. Notify us immediately at <a href="mailto:support@seatedbookings.com" style={{ color: 'var(--blue)' }}>support@seatedbookings.com</a> if you suspect unauthorised use of your account.</p>
+
+            <h3>4. Table bookings</h3>
+            <p>When you book a table, you agree to pay the Venue&apos;s minimum spend for that table plus Seat&apos;d&apos;s service charge (currently 5%), collected upfront. The minimum spend is credited to your table as bar credit on the night. If you invite friends and enable split-pay, each invited guest is responsible for their own share; if outstanding shares are not paid within the payment window shown in the app, the booking is automatically cancelled and any amounts already paid are refunded to the payer. A Venue may decline a booking request, in which case any amount paid is refunded in full.</p>
+
+            <h3>5. Single tickets</h3>
+            <p>Where a Venue offers single-entry tickets through Seat&apos;d, each ticket purchase is limited to the quantity available as set by the Venue. Tickets are non-transferable outside the app&apos;s own sharing features and are void if the QR code has already been redeemed. Ticket prices, availability and any age or dress requirements are set by the Venue, not by Seat&apos;d.</p>
+
+            <h3>6. Open tables &amp; joining other guests</h3>
+            <p>A guest who books a table may choose to make it &quot;public&quot;, allowing other users to request a paid seat at that table. Approving or declining a join request is entirely at the discretion of the table&apos;s host. Seat&apos;d facilitates the payment and messaging around this feature but is not a party to, and accepts no responsibility for, any arrangement between guests.</p>
+
+            <h3>7. Pricing, fees &amp; payments</h3>
+            <p>All prices are shown in South African Rand and include the Seat&apos;d service charge where applicable. Payments are processed by third-party, PCI-compliant payment providers; Seat&apos;d does not store your full card details. Prices set by Venues (minimum spend, ticket prices, join prices) are set independently by each Venue, and Seat&apos;d is not responsible for pricing disputes with a Venue beyond amounts collected through the Service.</p>
+
+            <h3>8. Cancellations, no-shows &amp; refunds</h3>
+            <p>You may cancel an unconfirmed booking before a Venue approves it. Once a Venue has confirmed a booking or ticket, cancellation and refund eligibility is at that Venue&apos;s discretion, communicated via the Venue&apos;s listed VIP contact. Automatic refunds apply where: (a) a Venue declines a request, (b) a split-pay booking auto-cancels because not everyone paid in time, or (c) a public table fills up before your join request is processed. Refunds are returned to the original payment method within 3–5 business days.</p>
+
+            <h3>9. Promoter program</h3>
+            <p>Promoter codes are used to track referral commissions payable by Venues to promoters; they do not change the price a guest pays. Misuse of promoter codes (including self-referral fraud) may result in suspension of the promoter account and forfeiture of unpaid commissions.</p>
+
+            <h3>10. For venue &amp; club owners</h3>
+            <p>If you register a Venue on Seat&apos;d, you confirm you are authorised to represent that Venue and to accept bookings, list tables, tickets, pricing and a bottle/drink menu on its behalf. You are responsible for keeping your listed availability, pricing and layout accurate, for honouring confirmed bookings and tickets, and for all decisions relating to entry, service and conduct on your premises. Seat&apos;d may review, approve, suspend or remove a Venue listing at its discretion, including for inaccurate listings, repeated guest complaints, or non-payment of platform fees.</p>
+
+            <h3>11. Acceptable use</h3>
+            <p>You agree not to: misrepresent your identity or age; use the Service for any unlawful purpose; harass, threaten or defraud other users or Venues; attempt to circumvent payment, security or rate-limiting measures; scrape or resell listings without permission; or upload content that is defamatory, obscene, or infringes another person&apos;s rights. We may suspend or terminate accounts that breach this section.</p>
+
+            <h3>12. Reviews &amp; user content</h3>
+            <p>Reviews, messages, profile photos and other content you submit must be your own honest experience or lawful content you have the right to share. You grant Seat&apos;d a licence to display this content within the Service. We may remove content that violates these Terms or applicable law, and we do not guarantee that reviews reflect every guest&apos;s experience.</p>
+
+            <h3>13. Assumption of risk</h3>
+            <p>Nightlife venues involve inherent risks, including but not limited to alcohol service, crowded spaces, and late-night travel. You attend Venues at your own risk. Venues may refuse entry or remove a guest for intoxication, dress code, capacity, or safety reasons, and Seat&apos;d is not liable for such decisions or for any injury, loss or damage arising from your attendance at a Venue.</p>
+
+            <h3>14. Disclaimers &amp; limitation of liability</h3>
+            <p>The Service is provided &quot;as is&quot; without warranties of any kind, express or implied. To the maximum extent permitted by law, Seat&apos;d&apos;s total liability to you for any claim arising from your use of the Service is limited to the amount you paid to Seat&apos;d in the 3 months preceding the claim. Seat&apos;d is not liable for indirect, incidental or consequential loss, or for the acts or omissions of any Venue or other user.</p>
+
+            <h3>15. Indemnity</h3>
+            <p>You agree to indemnify and hold Seat&apos;d harmless from any claim, loss or expense (including reasonable legal costs) arising from your breach of these Terms, your misuse of the Service, or your conduct at a Venue.</p>
+
+            <h3>16. Suspension &amp; termination</h3>
+            <p>We may suspend or close your account at any time for breach of these Terms, suspected fraud, or misuse of the Service. You may close your account at any time by contacting <a href="mailto:support@seatedbookings.com" style={{ color: 'var(--blue)' }}>support@seatedbookings.com</a>. Sections of these Terms that by their nature should survive termination (including liability, indemnity and governing law) will continue to apply.</p>
+
+            <h3>17. Changes to these terms</h3>
+            <p>We may update these Terms from time to time as the Service evolves. Material changes will be reflected by updating the effective date above. Continued use of the Service after changes take effect constitutes acceptance of the updated Terms.</p>
+
+            <h3>18. Governing law &amp; disputes</h3>
+            <p>These Terms are governed by the laws of the Republic of South Africa. Any dispute arising from these Terms or your use of the Service is subject to the non-exclusive jurisdiction of the South African courts, without prejudice to your statutory rights as a consumer under the Consumer Protection Act.</p>
+
+            <h3>19. Contact</h3>
+            <p>Questions about these Terms can be sent to <a href="mailto:support@seatedbookings.com" style={{ color: 'var(--blue)' }}>support@seatedbookings.com</a>.</p>
           </>
         )}
         {page === 'privacy' && (
@@ -205,7 +258,7 @@ export function LegalScreen() {
         {page === 'faq' && FAQS.map(([q, a], i) => (
           <details className="faq" key={i}><summary>{q}</summary><div className="ans">{a}</div></details>
         ))}
-        <div className="micro" style={{ marginTop: 26 }}>Seat&apos;d (Pty) Ltd · Demo prototype · Last updated {todayStr()}</div>
+        <div className="micro" style={{ marginTop: 26 }}>Seat&apos;d · Johannesburg, South Africa · Last updated {todayStr()}</div>
       </div></div>
       <UserTabbar />
     </>
