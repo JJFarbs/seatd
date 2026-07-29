@@ -6,7 +6,7 @@ import { AREAS, tierMeta, fmt, serviceFee } from '@/lib/data';
 import {
   useApp, mutate, venues, venue, clubVenue, tablesFor, allPaid, paidCount,
   amountOutstanding, decide, scanNext, toast, syncVenueToDb, saveVenueLayout,
-  FLOOR_SLOTS, authSignOut, saveVenueLocation, processScan, ticketsFor, saveVenueTickets,
+  FLOOR_SLOTS, authSignOut, saveVenueLocation, processScan, ticketsFor, saveVenueTickets, saveVenueMenu,
 } from '@/lib/store';
 import { Icon, Empty, OfflineBar, Cover, Deadline } from './ui';
 import { PaymentRows } from './user';
@@ -194,6 +194,7 @@ function ClubManage() {
         </div>
         <TableLayoutEditor v={v} />
         <TicketEditor v={v} />
+        <MenuEditor v={v} />
         <LocationPicker v={v} />
         <div className="summary">
           <div className="eyebrow">Upcoming events</div>
@@ -356,6 +357,47 @@ function TicketEditor({ v }) {
         <button className="btn sm ghost" onClick={add}>+ Ticket type</button>
       </div>
       <button className="btn sm" style={{ marginTop: 12 }} onClick={() => saveVenueTickets(v, v.tickets || [])}>Save tickets</button>
+    </div>
+  );
+}
+
+// Bottle/drink menu editor — shown to guests under the club's Info tab.
+function MenuEditor({ v }) {
+  useApp();
+  const items = v.menu || [];
+  const add = () => mutate(() => { v.menu = [...(v.menu || []), ['New item', 100]]; });
+  const remove = (i) => mutate(() => { v.menu = (v.menu || []).filter((_, idx) => idx !== i); });
+  const setField = (i, key) => (e) => {
+    const raw = e.target.value;
+    mutate(() => {
+      const arr = [...(v.menu || [])];
+      const item = [...arr[i]];
+      if (key === 'name') item[0] = raw;
+      else { const val = parseInt(String(raw).replace(/\D/g, ''), 10); item[1] = isNaN(val) ? 0 : val; }
+      arr[i] = item;
+      v.menu = arr;
+    });
+  };
+  return (
+    <div className="summary" style={{ maxWidth: 780 }}>
+      <div className="row">
+        <div><div className="eyebrow">Bottle menu</div><div className="meta2" style={{ marginTop: 4 }}>Shown to guests under Club info — add your bottles/drinks and prices.</div></div>
+      </div>
+      {items.map((m, i) => (
+        <div className="minirow" key={i} style={{ flexWrap: 'wrap', gap: 8 }}>
+          <input className="input" value={m[0]} onChange={setField(i, 'name')} style={{ flex: '1 1 160px', minHeight: 38, padding: '6px 10px' }} />
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <label className="meta2" style={{ fontSize: 11 }}>Price R</label>
+            <input className="input" inputMode="numeric" value={m[1]} onChange={setField(i, 'price')} style={{ width: 84, minHeight: 38, padding: '6px 10px' }} />
+            <button className="btn sm ghost" style={{ width: 'auto', padding: '6px 10px', minHeight: 38 }} onClick={() => remove(i)}>Remove</button>
+          </span>
+        </div>
+      ))}
+      {!items.length && <div className="meta2" style={{ marginTop: 8 }}>No menu items yet — add one below.</div>}
+      <div className="wideactions" style={{ marginTop: 12 }}>
+        <button className="btn sm ghost" onClick={add}>+ Menu item</button>
+      </div>
+      <button className="btn sm" style={{ marginTop: 12 }} onClick={() => saveVenueMenu(v, v.menu || [])}>Save menu</button>
     </div>
   );
 }
