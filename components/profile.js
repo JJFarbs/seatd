@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { todayStr } from '@/lib/data';
 import { useApp, mutate, people, toast, authSignOut, saveProfileToDb, readAllNotifs, uploadAvatar } from '@/lib/store';
 import { Icon, Av, Empty, LogoMark, OfflineBar } from './ui';
@@ -137,6 +137,8 @@ export function EditProfile() {
 
 export function NotifScreen() {
   const s = useApp();
+  // opening the tab clears the alerts, same as opening a chat clears its unread badge
+  useEffect(() => { readAllNotifs(); }, []);
   return (
     <>
       <div className="topbar">
