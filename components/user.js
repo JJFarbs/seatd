@@ -9,6 +9,7 @@ import {
   bookingLink, qrPayload, toggleFav, submitReview, addFriendFromDraft, sendBookingInvite,
   makePublic, savePublicPrice, requestJoinPublic, confirmJoinPayment, decideJoin,
   submitBooking, markPaid, nativeShare, copyText, addFriend, searchProfiles,
+  ticketsFor, buyTicket, ticketQrPayload,
 } from '@/lib/store';
 import {
   Icon, Pin, CheckBig, LogoMark, Av, StatusChip, Empty, OfflineBar, Cover, Gallery,
@@ -22,6 +23,7 @@ export function UserTabbar() {
   const myReq = uid
     ? s.requests.filter((r) => r.userId === uid && (r.status === 'confirmed' || r.status === 'checkedin')).length
       + s.publicTables.filter((pt) => (pt.joiners || []).some((j) => j.id === uid)).length
+      + s.ticketPurchases.filter((p) => p.userId === uid && p.status !== 'refunded').length
     : s.dbReady ? 0 : s.requests.filter((r) => r.who === 'You' && (r.status === 'confirmed' || r.status === 'checkedin')).length;
   const unread = s.notifs.filter((n) => n.unread).length;
   const unreadChats = Object.values(s.unread || {}).reduce((a, b) => a + b, 0);
@@ -438,7 +440,7 @@ export function VenueScreen() {
   const s = useApp();
   const v = venue(s.venueId);
   if (!v) return null;
-  const tabs = [['tables', 'Tables'], ['events', 'Events'], ['info', 'Club info'], ['reviews', 'Reviews']];
+  const tabs = [['tables', 'Tables'], ['tickets', 'Tickets'], ['events', 'Events'], ['info', 'Club info'], ['reviews', 'Reviews']];
   const tables = tablesFor(s.venueId);
   const sel = tables.find((t) => t.id === s.selTable);
   return (
@@ -456,6 +458,7 @@ export function VenueScreen() {
       <div className="body"><div className="pad" style={{ paddingBottom: s.venueTab === 'tables' ? 150 : 34 }}>
         <div className="subtabs">{tabs.map(([id, label]) => <div key={id} className={`chip ${s.venueTab === id ? 'on' : ''}`} onClick={() => mutate((x) => { x.venueTab = id; })}>{label}</div>)}</div>
         {s.venueTab === 'tables' && <FloorMap v={v} tables={tables} />}
+        {s.venueTab === 'tickets' && <TicketsTab v={v} />}
         {s.venueTab === 'events' && <VenueEvents v={v} />}
         {s.venueTab === 'info' && <VenueInfo v={v} />}
         {s.venueTab === 'reviews' && <VenueReviews v={v} />}
@@ -514,6 +517,51 @@ function FloorMap({ v, tables }) {
       </div>
       <Availability id={v.id} />
     </>
+  );
+}
+function TicketsTab({ v }) {
+  const s = useApp();
+  const tickets = ticketsFor(v.id);
+  return (
+    <>
+      <div className="eyebrow" style={{ marginTop: 14 }}>Single tickets</div>
+      <div className="sub" style={{ marginTop: 4 }}>Skip the table — buy one entry ticket and walk straight in.</div>
+      <div className="stagger" style={{ marginTop: 14 }}>
+        {tickets.length ? tickets.map((t) => <TicketRow key={t.id} t={t} />)
+          : <Empty>No tickets on sale yet — check back closer to the date, or book a table instead.</Empty>}
+      </div>
+    </>
+  );
+}
+function TicketRow({ t }) {
+  const [qty, setQty] = useState(1);
+  const soldOut = t.remaining <= 0;
+  const q = Math.max(1, Math.min(qty, t.remaining || 1));
+  return (
+    <div className="publiccard">
+      <div className="row">
+        <div>
+          <div className="eyebrow" style={{ color: 'var(--gold)' }}>Entry ticket</div>
+          <div style={{ fontSize: 17, fontWeight: 800 }}>{t.name}</div>
+          <div className="meta2">{soldOut ? 'Sold out' : `${t.remaining} left`}</div>
+        </div>
+        <span className="badge" style={{ background: 'rgba(255,194,75,.15)', color: 'var(--gold)' }}>{fmt(t.price)}</span>
+      </div>
+      {soldOut ? (
+        <button className="btn sm ghost" style={{ marginTop: 13 }} disabled>Sold out</button>
+      ) : (
+        <div className="splitrow" style={{ marginTop: 13, alignItems: 'center' }}>
+          <div className="stepper">
+            <button aria-label="Fewer tickets" onClick={() => setQty((n) => Math.max(1, n - 1))}>−</button>
+            <span className="val">{q}</span>
+            <button aria-label="More tickets" onClick={() => setQty((n) => Math.min(t.remaining, n + 1))}>+</button>
+          </div>
+          <button className="btn sm" style={{ flex: 1 }} onClick={() => mutate((x) => { x.selTicket = t.id; x.ticketQty = q; x.screen = 'ticketpay'; })}>
+            Buy {q > 1 ? `${q} tickets` : 'ticket'} — {fmt(t.price * q)}
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 function VenueEvents({ v }) {
@@ -751,6 +799,36 @@ export function JoinPayScreen() {
     </>
   );
 }
+export function TicketPayScreen() {
+  const s = useApp();
+  const v = venue(s.venueId);
+  const t = v ? ticketsFor(v.id).find((x) => x.id === s.selTicket) : null;
+  if (!v || !t) return null;
+  const qty = Math.max(1, s.ticketQty || 1);
+  const subtotal = t.price * qty;
+  const fee = serviceFee(subtotal);
+  const total = subtotal + fee;
+  return (
+    <>
+      <div className="topbar">
+        <button className="back" aria-label="Back" onClick={() => mutate((x) => { x.screen = 'venue'; x.venueTab = 'tickets'; })}><Icon name="back" size={22} stroke={2.8} /></button>
+        <div><div className="h2" style={{ fontSize: 20 }}>Ticket checkout</div><div className="sub" style={{ fontSize: 12 }}>{v.name} — {t.name}</div></div>
+      </div>
+      <div className="body enter"><div className="pad" style={{ paddingBottom: 130, maxWidth: 680 }}>
+        <CardFields />
+        <div className="summary">
+          <div className="li"><span>{t.name} × {qty}</span><b>{fmt(subtotal)}</b></div>
+          <div className="li"><span>Seat&apos;d service charge (5%)</span><b>{fmt(fee)}</b></div>
+          <div className="total"><span className="sub">You pay now</span><span className="amt">{fmt(total)}</span></div>
+        </div>
+        <div className="micro" style={{ marginTop: 18 }}>Demo only — no real charge. In production this routes through a local processor (Paystack / Yoco).</div>
+      </div></div>
+      <div className="bookbar">
+        <button className="btn gold" disabled={s.offline} onClick={() => buyTicket(v.id, t.id, qty)}>{s.offline ? 'Offline — reconnect to pay' : `Pay ${fmt(total)}`}</button>
+      </div>
+    </>
+  );
+}
 
 // ---------- status / pass ----------
 export function StatusScreen() {
@@ -865,6 +943,7 @@ export function MyBookings() {
   const myJoins = uid
     ? s.publicTables.flatMap((pt) => (pt.joinRequests || []).filter((j) => j.userId === uid && j.status !== 'denied').map((j) => ({ pt, j })))
     : [];
+  const myTickets = uid ? s.ticketPurchases.filter((p) => p.userId === uid && p.status !== 'refunded') : [];
   return (
     <>
       <OfflineBar />
@@ -887,6 +966,22 @@ export function MyBookings() {
                 {j.status === 'approved' && (
                   <button className="btn sm" style={{ marginTop: 14 }} onClick={() => mutate((x) => { x.activeJoinPass = { ptId: pt.id, jrId: j.id }; x.screen = 'joinpass'; })}>Open pass</button>
                 )}
+              </div>
+            ))}
+          </div>
+        )}
+        {myTickets.length > 0 && (
+          <div className="stagger" style={{ marginTop: 16 }}>
+            {myTickets.map((p) => (
+              <div className="req" key={p.id}>
+                <div className="row">
+                  <div>
+                    <div className="nm" style={{ fontSize: 17, fontWeight: 800 }}>{p.venue} — {p.ticketName}</div>
+                    <div className="meta2">{p.qty}× ticket · {fmt(p.total)} paid · {p.date}</div>
+                  </div>
+                  <StatusChip st={p.status === 'checkedin' ? 'checkedin' : 'confirmed'} />
+                </div>
+                <button className="btn sm" style={{ marginTop: 14 }} onClick={() => mutate((x) => { x.activeTicketPurchase = p.id; x.screen = 'ticketpass'; })}>Open pass</button>
               </div>
             ))}
           </div>
@@ -987,6 +1082,54 @@ export function JoinedPassScreen() {
           </div>
         </div>
         <div className="pad"><div className="micro" style={{ textAlign: 'center', maxWidth: 560, margin: '10px auto 0' }}>Show this at the door. Your payment is credited to the table tab.</div></div>
+      </div>
+      <UserTabbar />
+    </>
+  );
+}
+
+// Pass for a single ticket purchase (no table involved)
+export function TicketPassScreen() {
+  const s = useApp();
+  const p = s.ticketPurchases.find((x) => x.id === s.activeTicketPurchase);
+  if (!p) return <MyBookings />;
+  return (
+    <>
+      <div className="topbar">
+        <button className="back" aria-label="Back" onClick={() => mutate((x) => { x.screen = 'home'; x.tab = 'bookings'; })}><Icon name="back" size={22} stroke={2.8} /></button>
+        <div className="h2" style={{ fontSize: 20 }}>Ticket pass</div>
+      </div>
+      <div className="body enter">
+        <div className="center" style={{ flex: 'none', padding: '18px 30px 6px' }}>
+          <div className="checkwrap pop"><CheckBig /></div>
+          <div className="h2" style={{ marginTop: 14 }}>You&apos;re in</div>
+          <div style={{ marginTop: 6 }}><StatusChip st={p.status === 'checkedin' ? 'checkedin' : 'confirmed'} /></div>
+          <div className="sub" style={{ marginTop: 6 }}>{p.venue} — {p.ticketName}</div>
+        </div>
+        <div className="pass enter">
+          <div className="head">
+            <div className="row">
+              <div className="covtag nm" style={{ fontSize: 22, position: 'static', maxWidth: 'none' }}>{p.venue}</div>
+              <span className="pill" style={{ background: 'var(--gold)', color: '#0B0710' }}>{p.ticketName}</span>
+            </div>
+            <div className="sub" style={{ fontSize: 13, marginTop: 4 }}>{p.date} · entry ticket</div>
+          </div>
+          <div className="qr"><div className="qrbox"><QRCodeCanvas value={ticketQrPayload(p)} size={140} bgColor="#F5F0FA" fgColor="#0B0710" level="M" /></div></div>
+          <div className="det">
+            <div><div className="k">Ticket</div><div className="v">{p.ticketName}</div></div>
+            <div><div className="k">Qty</div><div className="v">{p.qty}</div></div>
+            <div><div className="k">You paid</div><div className="v">{fmt(p.total)}</div></div>
+            <div><div className="k">Ref</div><div className="v">{p.code}</div></div>
+          </div>
+        </div>
+        <div className="bypass">
+          <div className="ico">✓</div>
+          <div>
+            <div style={{ fontWeight: 800, fontSize: 14 }}>Queue bypass enabled</div>
+            <div className="meta2">Use the Seat&apos;d lane and show this at the door.</div>
+          </div>
+        </div>
+        <div className="pad"><div className="micro" style={{ textAlign: 'center', maxWidth: 560, margin: '10px auto 0' }}>Show this at the door for entry.</div></div>
       </div>
       <UserTabbar />
     </>

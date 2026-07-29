@@ -6,7 +6,7 @@ import { AREAS, tierMeta, fmt, serviceFee } from '@/lib/data';
 import {
   useApp, mutate, venues, venue, clubVenue, tablesFor, allPaid, paidCount,
   amountOutstanding, decide, scanNext, toast, syncVenueToDb, saveVenueLayout,
-  FLOOR_SLOTS, authSignOut, saveVenueLocation, processScan,
+  FLOOR_SLOTS, authSignOut, saveVenueLocation, processScan, ticketsFor, saveVenueTickets,
 } from '@/lib/store';
 import { Icon, Empty, OfflineBar, Cover, Deadline } from './ui';
 import { PaymentRows } from './user';
@@ -193,6 +193,7 @@ function ClubManage() {
           <div className="featurecard"><div className="n">22:00</div><div className="l">Doors open</div></div>
         </div>
         <TableLayoutEditor v={v} />
+        <TicketEditor v={v} />
         <LocationPicker v={v} />
         <div className="summary">
           <div className="eyebrow">Upcoming events</div>
@@ -311,10 +312,59 @@ function TableLayoutEditor({ v }) {
   );
 }
 
+// Single-ticket editor: owners define ticket types (name, price, quantity) sold
+// alongside tables — guests buy these under the club's Tickets sub-menu.
+function TicketEditor({ v }) {
+  useApp();
+  const ts = ticketsFor(v.id);
+  const nextId = () => {
+    let n = 1;
+    while (ts.some((t) => t.id === 'T' + n)) n++;
+    return 'T' + n;
+  };
+  const add = () => mutate(() => { v.tickets = [...(v.tickets || []), { id: nextId(), name: 'General entry', price: 150, qty: 100 }]; });
+  const remove = (id) => mutate(() => { v.tickets = (v.tickets || []).filter((t) => t.id !== id); });
+  const setField = (id, key) => (e) => {
+    const raw = e.target.value;
+    mutate(() => {
+      const t = (v.tickets || []).find((x) => x.id === id);
+      if (!t) return;
+      if (key === 'name') t.name = raw;
+      else { const val = parseInt(String(raw).replace(/\D/g, ''), 10); t[key] = isNaN(val) ? 0 : val; }
+    });
+  };
+  return (
+    <div className="summary" style={{ maxWidth: 780 }}>
+      <div className="row">
+        <div><div className="eyebrow">Tickets</div><div className="meta2" style={{ marginTop: 4 }}>Sell single-entry tickets alongside tables — guests buy these under the club&apos;s Tickets tab.</div></div>
+      </div>
+      {ts.map((t) => (
+        <div className="minirow" key={t.id} style={{ flexWrap: 'wrap', gap: 8 }}>
+          <input className="input" value={t.name} onChange={setField(t.id, 'name')} style={{ flex: '1 1 160px', minHeight: 38, padding: '6px 10px' }} />
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <label className="meta2" style={{ fontSize: 11 }}>Price R</label>
+            <input className="input" inputMode="numeric" value={t.price} onChange={setField(t.id, 'price')} style={{ width: 84, minHeight: 38, padding: '6px 10px' }} />
+            <label className="meta2" style={{ fontSize: 11 }}>Qty</label>
+            <input className="input" inputMode="numeric" value={t.qty} onChange={setField(t.id, 'qty')} style={{ width: 74, minHeight: 38, padding: '6px 10px' }} />
+            <span className="meta2" style={{ fontSize: 11 }}>{t.sold || 0} sold</span>
+            <button className="btn sm ghost" style={{ width: 'auto', padding: '6px 10px', minHeight: 38 }} onClick={() => remove(t.id)}>Remove</button>
+          </span>
+        </div>
+      ))}
+      {!ts.length && <div className="meta2" style={{ marginTop: 8 }}>No ticket types yet — add one below.</div>}
+      <div className="wideactions" style={{ marginTop: 12 }}>
+        <button className="btn sm ghost" onClick={add}>+ Ticket type</button>
+      </div>
+      <button className="btn sm" style={{ marginTop: 12 }} onClick={() => saveVenueTickets(v, v.tickets || [])}>Save tickets</button>
+    </div>
+  );
+}
+
 function StaffMode() {
   const s = useApp();
   const v = clubVenue();
   const list = s.requests.filter((r) => r.vid === v.id && (r.status === 'confirmed' || r.status === 'checkedin'));
+  const ticketList = s.ticketPurchases.filter((p) => p.vid === v.id && p.status !== 'refunded');
   const [scanning, setScanning] = useState(false);
   const [camErr, setCamErr] = useState(null);
   const [result, setResult] = useState(null);
@@ -386,6 +436,15 @@ function StaffMode() {
           )) : <div className="minirow"><span>No confirmed bookings yet</span><b>—</b></div>}
         </div>
         <div className="summary">
+          <div className="eyebrow">Tonight&apos;s ticket holders</div>
+          {ticketList.length ? ticketList.map((p) => (
+            <div className="minirow" key={p.id}>
+              <span>{p.name} — {p.ticketName} · {p.qty} guest{p.qty === 1 ? '' : 's'} {p.status === 'checkedin' ? <b style={{ color: 'var(--blue)' }}>· checked in</b> : null}</span>
+              <b>{p.code || p.id}</b>
+            </div>
+          )) : <div className="minirow"><span>No tickets sold yet</span><b>—</b></div>}
+        </div>
+        <div className="summary">
           <div className="eyebrow">Staff permissions</div>
           <div className="minirow"><span>Scan tickets</span><b style={{ color: 'var(--ok)' }}>Enabled</b></div>
           <div className="minirow"><span>Approve tables</span><b style={{ color: 'var(--gold)' }}>Manager only</b></div>
@@ -403,6 +462,8 @@ function ClubInsights() {
   const reqs = s.requests.filter((r) => r.vid === v.id);
   const confirmed = reqs.filter((r) => r.status === 'confirmed' || r.status === 'checkedin');
   const pending = reqs.filter((r) => r.status === 'pending');
+  const ticketSales = s.ticketPurchases.filter((p) => p.vid === v.id && p.status !== 'refunded');
+  const ticketRevenue = ticketSales.reduce((a, p) => a + (Number(p.total) || 0), 0);
   const revenue = confirmed.reduce((a, r) => a + (Number(r.total) || 0), 0);
   const service = confirmed.reduce((a, r) => a + (Number(r.serviceFee) || serviceFee(r.subtotal || r.min || 0)), 0);
   const guests = confirmed.reduce((a, r) => a + (r.men || 0) + (r.women || 0), 0);
@@ -444,6 +505,7 @@ function ClubInsights() {
         <div className="summary">
           <div className="eyebrow">Money</div>
           <div className="minirow"><span>Prepaid bar credit</span><b>{fmt(confirmed.reduce((a, r) => a + (r.min || 0), 0))}</b></div>
+          <div className="minirow"><span>Ticket sales ({ticketSales.reduce((a, p) => a + (p.qty || 0), 0)})</span><b>{fmt(ticketRevenue)}</b></div>
           <div className="minirow"><span>Seat&apos;d service fees</span><b>{fmt(service)}</b></div>
           <div className="minirow"><span>Promoter commission owed</span><b>{fmt(Math.round(revenue * 0.05))}</b></div>
         </div>

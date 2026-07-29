@@ -1,0 +1,15 @@
+import { dbFor } from '@/lib/db';
+
+export const dynamic = 'force-dynamic';
+
+export async function PATCH(req, { params }) {
+  const db = dbFor(req.headers.get('authorization'));
+  if (!db) return Response.json({ db: false });
+  const body = await req.json();
+  const allowed = ['status'];
+  const update = {};
+  for (const k of allowed) if (k in body) update[k] = body[k];
+  const { error } = await db.from('ticket_purchases').update(update).eq('id', params.id);
+  if (error) return Response.json({ error: error.message }, { status: 500 });
+  return Response.json({ ok: true });
+}
