@@ -241,9 +241,57 @@ export function LegalScreen() {
         )}
         {page === 'privacy' && (
           <>
-            <h3>What we collect</h3><p>Account details (name, handle, email), booking history, and payment tokens processed by our payment partners. We never store full card numbers.</p>
-            <h3>How we use it</h3><p>To operate bookings, prevent fraud, and show venues anonymised crowd stats. We do not sell personal data.</p>
-            <h3>Your rights</h3><p>Request export or deletion of your data any time via privacy@seatedbookings.com (POPIA compliant).</p>
+            <p className="meta2" style={{ marginBottom: 6 }}>Effective date: {todayStr()}</p>
+            <h3>1. Introduction</h3>
+            <p>This Privacy Policy explains how Seat&apos;d collects, uses, stores and protects your personal information when you use the Service. It is written to align with South Africa&apos;s Protection of Personal Information Act (POPIA). By using Seat&apos;d you consent to the processing described here.</p>
+
+            <h3>2. Information we collect</h3>
+            <p><b>Account &amp; profile:</b> name, username, email address, password (stored securely by our authentication provider, never in plain text), optional bio, and profile photo.</p>
+            <p><b>Booking &amp; ticket data:</b> the tables you book, tickets you buy, party size, amounts paid, promoter codes used, and booking references.</p>
+            <p><b>Social features:</b> friends/crew connections, direct messages, table group chats, favourites, and notifications you send or receive within the app.</p>
+            <p><b>Venue data (club owners):</b> venue details, floor layout, ticket types and pricing, bottle menu, and the location you place on the map.</p>
+            <p><b>Location:</b> if you tap &quot;Find me&quot; on the map, we request your device&apos;s GPS location via your browser — only with your permission, and only to centre the map. We do not track your location in the background.</p>
+            <p><b>Device &amp; usage data:</b> basic technical data such as browser type and general usage of the app, used only to keep the Service working reliably.</p>
+            <p><b>Payments:</b> Seat&apos;d is integrating real payment processing; once live, payments will be handled by a registered, PCI-compliant payment provider and Seat&apos;d will never see or store your full card number. Until that integration goes live, no real card charges are made through the Service.</p>
+
+            <h3>3. How we use your information</h3>
+            <p>We use your information to operate bookings and ticket sales, run the social features you opt into (friends, chats, favourites), communicate booking-related notifications, prevent fraud and abuse, and improve the Service. We do not sell your personal information to third parties.</p>
+
+            <h3>4. Legal basis for processing</h3>
+            <p>We process your information because it is necessary to perform our contract with you (fulfilling bookings and tickets), because you have consented (e.g. location access, optional profile fields), or because we have a legitimate interest in keeping the Service secure and reliable.</p>
+
+            <h3>5. Who we share information with</h3>
+            <p>We share the minimum information needed with: the Venue you book or buy a ticket from (your name, party details and contact needed to honour the booking); our hosting and database provider, which stores and processes data on our behalf under contract; and our payment provider, once live payment processing is enabled. We do not share your data with advertisers.</p>
+
+            <h3>6. Where your data is stored</h3>
+            <p>Seat&apos;d&apos;s database and file storage are hosted by our infrastructure provider in the European Union (Ireland). This means your information is transferred outside South Africa for processing. We only use providers that are contractually bound to protect your data to a standard consistent with POPIA.</p>
+
+            <h3>7. Profile photos</h3>
+            <p>Profile photos you upload are stored in a public file bucket and are accessible via a direct link to anyone who has that link (for example, to show your photo to friends in the app). Avoid uploading a photo you would not want to be publicly viewable via its link.</p>
+
+            <h3>8. Cookies &amp; local storage</h3>
+            <p>Seat&apos;d uses your browser&apos;s local storage (not tracking cookies) to keep you signed in between visits. We do not use third-party advertising trackers.</p>
+
+            <h3>9. Data retention</h3>
+            <p>We keep your account and booking history for as long as your account is active, and for a reasonable period after closure to meet legal, accounting and fraud-prevention obligations. You can request earlier deletion — see your rights below.</p>
+
+            <h3>10. Security</h3>
+            <p>We use industry-standard measures, including row-level access controls on our database, to restrict who can read or change your data. No system is 100% secure, and we encourage you to use a strong, unique password.</p>
+
+            <h3>11. Your rights</h3>
+            <p>Under POPIA you have the right to: know what personal information we hold about you; request a copy of it; correct inaccurate information; request deletion of your information; and object to certain processing. To exercise any of these rights, email <a href="mailto:privacy@seatedbookings.com" style={{ color: 'var(--blue)' }}>privacy@seatedbookings.com</a>. You can also delete favourites, friends, messages and your profile photo directly within the app at any time.</p>
+
+            <h3>12. Children</h3>
+            <p>Seat&apos;d is intended for users aged 18 and over and is not directed at children. We do not knowingly collect personal information from anyone under 18.</p>
+
+            <h3>13. Complaints</h3>
+            <p>If you believe we have not handled your personal information properly, you can contact us first at <a href="mailto:privacy@seatedbookings.com" style={{ color: 'var(--blue)' }}>privacy@seatedbookings.com</a>, or lodge a complaint with South Africa&apos;s Information Regulator (inforeg.org.za).</p>
+
+            <h3>14. Changes to this policy</h3>
+            <p>We may update this Privacy Policy as the Service evolves. Material changes will be reflected by updating the effective date above.</p>
+
+            <h3>15. Contact</h3>
+            <p>Privacy questions or requests: <a href="mailto:privacy@seatedbookings.com" style={{ color: 'var(--blue)' }}>privacy@seatedbookings.com</a>.</p>
           </>
         )}
         {page === 'contact' && (
