@@ -7,6 +7,7 @@ import {
   useApp, mutate, venues, venue, clubVenue, tablesFor, allPaid, paidCount,
   amountOutstanding, decide, scanNext, toast, syncVenueToDb, saveVenueLayout,
   FLOOR_SLOTS, authSignOut, saveVenueLocation, processScan, ticketsFor, saveVenueTickets, saveVenueMenu,
+  fetchPaystackBanks, saveVenuePayout,
 } from '@/lib/store';
 import { Icon, Empty, OfflineBar, Cover, Deadline } from './ui';
 import { PaymentRows } from './user';
@@ -158,6 +159,7 @@ function ClubManage() {
           </span>
         </div>
         <ClubSelector />
+        <PayoutSetup v={v} />
         <div className="sub">This is exactly how guests see the selected club. Edit below — it updates instantly.</div>
         <div className="studio-prev" style={{ marginTop: 14 }}>
           <div className="cover" style={{ height: 150 }}>
@@ -206,6 +208,68 @@ function ClubManage() {
       </div></div>
       <ClubTabbar />
     </>
+  );
+}
+
+// Payout setup: links the venue's own bank account as a Paystack subaccount.
+// Every real booking/ticket payment splits at Paystack — this venue gets its share
+// settled straight to its own bank, Seat'd only ever receives its 5% service fee.
+// Guests can't pay real money into this venue until this is done.
+function PayoutSetup({ v }) {
+  const [banks, setBanks] = useState([]);
+  const [banksLoading, setBanksLoading] = useState(false);
+  const [bankCode, setBankCode] = useState('');
+  const [accountNumber, setAccountNumber] = useState('');
+  const [businessName, setBusinessName] = useState(v.name);
+  const [busy, setBusy] = useState(false);
+  const active = v.payoutStatus === 'active';
+  const loadBanks = async () => {
+    if (banks.length || banksLoading) return;
+    setBanksLoading(true);
+    setBanks(await fetchPaystackBanks());
+    setBanksLoading(false);
+  };
+  const save = async () => {
+    if (!bankCode || !accountNumber.trim() || !businessName.trim()) { toast('Fill in bank, account number and business name'); return; }
+    setBusy(true);
+    const bankName = banks.find((b) => b.code === bankCode)?.name || '';
+    await saveVenuePayout(v, { bankCode, bankName, accountNumber: accountNumber.trim(), businessName: businessName.trim() });
+    setBusy(false);
+    setAccountNumber('');
+  };
+  return (
+    <div className="summary" style={{ maxWidth: 780, borderColor: active ? undefined : 'rgba(255,194,75,.5)' }}>
+      <div className="row">
+        <div>
+          <div className="eyebrow">Payouts</div>
+          <div className="meta2" style={{ marginTop: 4 }}>Link your bank account so guest payments settle straight to you, minus Seat&apos;d&apos;s 5% fee.</div>
+        </div>
+        <span className="badge" style={{ background: active ? 'rgba(63,224,160,.15)' : 'rgba(255,194,75,.15)', color: active ? 'var(--ok)' : 'var(--gold)' }}>
+          {active ? 'ACTIVE' : 'NOT SET UP'}
+        </span>
+      </div>
+      {active ? (
+        <div className="minirow"><span>Payouts go to</span><b>{v.payoutBankName} · account ending {v.payoutAccountLast4}</b></div>
+      ) : (
+        <div className="meta2" style={{ marginTop: 8, color: 'var(--warn)' }}>Guests can&apos;t pay real money for this venue&apos;s tables or tickets until this is set up.</div>
+      )}
+      <div className="field" style={{ marginTop: 12 }}>
+        <label>Business / account holder name</label>
+        <input className="input" value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
+      </div>
+      <div className="field">
+        <label>Bank</label>
+        <select className="input" value={bankCode} onFocus={loadBanks} onChange={(e) => setBankCode(e.target.value)}>
+          <option value="">{banksLoading ? 'Loading banks…' : 'Select your bank'}</option>
+          {banks.map((b) => <option key={b.code} value={b.code}>{b.name}</option>)}
+        </select>
+      </div>
+      <div className="field">
+        <label>Account number</label>
+        <input className="input" inputMode="numeric" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value.replace(/\D/g, ''))} placeholder={active ? 'Enter a new number to update' : ''} />
+      </div>
+      <button className="btn sm" style={{ marginTop: 10 }} disabled={busy} onClick={save}>{busy ? 'Saving…' : active ? 'Update payout details' : 'Save payout details'}</button>
+    </div>
   );
 }
 

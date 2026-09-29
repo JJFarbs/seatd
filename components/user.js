@@ -3,13 +3,13 @@ import { useState, useEffect, useRef } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { AREAS, GENRES, tierMeta, fmt, serviceFee, searchClubs, todayStr } from '@/lib/data';
 import {
-  S, useApp, mutate, venues, people, venue, tablesFor, bookingMath, paidCount,
+  S, useApp, mutate, venues, people, venue, tablesFor, bookingMath, splitPaymentsFor, paidCount,
   amountOutstanding, allPaid, adjustedShareAmount, tableCostRecovered, publicTableForBooking,
   publicJoinPrice, publicJoinCharge, publicSpotsOpen, openPublicTables, searchPeople,
   bookingLink, qrPayload, toggleFav, submitReview, addFriendFromDraft, sendBookingInvite,
-  makePublic, savePublicPrice, requestJoinPublic, confirmJoinPayment, decideJoin,
-  submitBooking, markPaid, nativeShare, copyText, addFriend, searchProfiles,
-  ticketsFor, buyTicket, ticketQrPayload,
+  makePublic, savePublicPrice, requestJoinPublic, decideJoin,
+  markPaid, nativeShare, copyText, addFriend, searchProfiles,
+  ticketsFor, ticketQrPayload, startPaystackPayment,
 } from '@/lib/store';
 import {
   Icon, Pin, CheckBig, LogoMark, Av, StatusChip, Empty, OfflineBar, Cover, Gallery,
@@ -68,7 +68,13 @@ export function PaymentRows({ r, editable }) {
             </div>
           </div>
           {editable && p.status !== 'paid'
-            ? <button className={`btn sm ${p.id === uid ? 'gold' : 'ghost'}`} style={{ width: 'auto', padding: '8px 12px' }} onClick={() => markPaid(r, p.id)}>{p.id === uid ? 'Pay my share' : 'Mark paid'}</button>
+            ? <button className={`btn sm ${p.id === uid ? 'gold' : 'ghost'}`} style={{ width: 'auto', padding: '8px 12px' }} disabled={s.payBusy}
+                onClick={() => {
+                  if (p.id !== uid) { markPaid(r, p.id); return; }
+                  const splitCount = (r.payments || []).length || 1;
+                  const mySubtotal = Math.round((r.subtotal || 0) / splitCount);
+                  startPaystackPayment('booking_share', r.vid, mySubtotal, p.amount - mySubtotal, { bookingId: r.id, paymentId: p.id });
+                }}>{p.id === uid ? 'Pay my share' : 'Mark paid'}</button>
             : <span className="badge" style={{ background: p.status === 'paid' ? 'rgba(63,224,160,.15)' : 'rgba(255,194,75,.14)', color: p.status === 'paid' ? 'var(--ok)' : 'var(--gold)' }}>{p.status === 'paid' ? 'PAID' : 'PINGED'}</span>}
         </div>
       ))}
@@ -722,9 +728,20 @@ export function BookingScreen() {
 }
 export function PayScreen() {
   const s = useApp();
+  const v = venue(s.venueId);
   const t = tablesFor(s.venueId).find((x) => x.id === s.selTable);
-  if (!t) return null;
+  if (!t || !v) return null;
   const m = bookingMath(t);
+  const notReady = v.payoutStatus !== 'active';
+  const pay = () => {
+    const mySubtotal = Math.round(m.groupTotal / m.splitCount);
+    const feeOverride = m.myShare - mySubtotal;
+    startPaystackPayment('booking_host', v.id, mySubtotal, feeOverride, {
+      venueName: v.name, tableId: t.id, tier: t.tier, men: s.men, women: s.women, min: t.min,
+      myShare: m.myShare, splitPay: s.splitPay, invited: s.splitPay ? s.invited.slice() : [],
+      promo: s.promoterCode, who: people.me.name || 'You', payments: splitPaymentsFor(t),
+    });
+  };
   return (
     <>
       <div className="topbar">
@@ -732,7 +749,6 @@ export function PayScreen() {
         <div className="h2" style={{ fontSize: 20 }}>Payment</div>
       </div>
       <div className="body enter"><div className="pad" style={{ paddingBottom: 130, maxWidth: 680 }}>
-        <CardFields />
         <div className="summary">
           <div className="li"><span>Minimum spend subtotal</span><b>{fmt(m.groupTotal)}</b></div>
           <div className="li"><span>Seat&apos;d service charge (5%)</span><b>{fmt(m.fee)}</b></div>
@@ -740,23 +756,13 @@ export function PayScreen() {
           <div className="li"><span>Split between</span><b>{m.splitCount} {m.splitCount === 1 ? 'person' : 'people'}</b></div>
           <div className="total"><span className="sub">You pay now</span><span className="amt">{fmt(m.myShare)}</span></div>
         </div>
-        <div className="micro" style={{ marginTop: 18 }}>Demo only — no real charge. In production this routes through a local processor (Paystack / Yoco).</div>
+        <div className="micro" style={{ marginTop: 18 }}>
+          {notReady ? `${v.name} hasn't finished payment setup yet — try again soon.` : "You'll be taken to Paystack's secure checkout to pay by card. Seat'd never sees or stores your card details."}
+        </div>
       </div></div>
       <div className="bookbar">
-        <button className="btn gold" disabled={s.offline} onClick={submitBooking}>{s.offline ? 'Offline — reconnect to pay' : `Pay ${fmt(m.myShare)}`}</button>
+        <button className="btn gold" disabled={s.offline || s.payBusy || notReady} onClick={pay}>{s.offline ? 'Offline — reconnect to pay' : s.payBusy ? 'Starting payment…' : `Pay ${fmt(m.myShare)}`}</button>
       </div>
-    </>
-  );
-}
-function CardFields() {
-  return (
-    <>
-      <div className="field"><label>Card number</label><input className="input" inputMode="numeric" autoComplete="cc-number" defaultValue="4242 4242 4242 4242" /></div>
-      <div className="splitrow">
-        <div style={{ flex: 1, minWidth: 120 }}><div className="field"><label>Expiry</label><input className="input" inputMode="numeric" defaultValue="12 / 27" /></div></div>
-        <div style={{ flex: 1, minWidth: 120 }}><div className="field"><label>CVC</label><input className="input" inputMode="numeric" defaultValue="123" /></div></div>
-      </div>
-      <div className="field"><label>Name on card</label><input className="input" autoComplete="cc-name" defaultValue={people.me.name} /></div>
     </>
   );
 }
@@ -765,6 +771,8 @@ export function JoinPayScreen() {
   const aj = s.activeJoin || {};
   const pt = s.publicTables.find((x) => x.id === aj.ptId);
   if (!pt) return null;
+  const v = venue(pt.vid);
+  const notReady = !v || v.payoutStatus !== 'active';
   const gender = aj.gender === 'female' ? 'female' : 'male';
   const subtotal = publicJoinPrice(pt, gender);
   const fee = serviceFee(subtotal);
@@ -786,15 +794,20 @@ export function JoinPayScreen() {
             <span className="badge" style={{ background: 'rgba(63,224,160,.15)', color: 'var(--ok)' }}>{publicSpotsOpen(pt)} seat{publicSpotsOpen(pt) === 1 ? '' : 's'} open</span>
           </div>
         </div>
-        <CardFields />
         <div className="summary">
           <div className="li"><span>Join price</span><b>{fmt(subtotal)}</b></div>
           <div className="li"><span>Seat&apos;d service charge (5%)</span><b>{fmt(fee)}</b></div>
           <div className="total"><span className="sub">You pay now</span><span className="amt">{fmt(total)}</span></div>
         </div>
+        <div className="micro" style={{ marginTop: 18 }}>
+          {notReady ? "This venue hasn't finished payment setup yet — try again soon." : "You'll be taken to Paystack's secure checkout to pay by card."}
+        </div>
       </div></div>
       <div className="bookbar">
-        <button className="btn gold" disabled={s.offline} onClick={confirmJoinPayment}>{s.offline ? 'Offline — reconnect to pay' : `Pay ${fmt(total)}`}</button>
+        <button className="btn gold" disabled={s.offline || s.payBusy || notReady}
+          onClick={() => startPaystackPayment('join', pt.vid, subtotal, null, { ptId: pt.id, gender, name: people.me.name })}>
+          {s.offline ? 'Offline — reconnect to pay' : s.payBusy ? 'Starting payment…' : `Pay ${fmt(total)}`}
+        </button>
       </div>
     </>
   );
@@ -808,6 +821,7 @@ export function TicketPayScreen() {
   const subtotal = t.price * qty;
   const fee = serviceFee(subtotal);
   const total = subtotal + fee;
+  const notReady = v.payoutStatus !== 'active';
   return (
     <>
       <div className="topbar">
@@ -815,16 +829,20 @@ export function TicketPayScreen() {
         <div><div className="h2" style={{ fontSize: 20 }}>Ticket checkout</div><div className="sub" style={{ fontSize: 12 }}>{v.name} — {t.name}</div></div>
       </div>
       <div className="body enter"><div className="pad" style={{ paddingBottom: 130, maxWidth: 680 }}>
-        <CardFields />
         <div className="summary">
           <div className="li"><span>{t.name} × {qty}</span><b>{fmt(subtotal)}</b></div>
           <div className="li"><span>Seat&apos;d service charge (5%)</span><b>{fmt(fee)}</b></div>
           <div className="total"><span className="sub">You pay now</span><span className="amt">{fmt(total)}</span></div>
         </div>
-        <div className="micro" style={{ marginTop: 18 }}>Demo only — no real charge. In production this routes through a local processor (Paystack / Yoco).</div>
+        <div className="micro" style={{ marginTop: 18 }}>
+          {notReady ? `${v.name} hasn't finished payment setup yet — try again soon.` : "You'll be taken to Paystack's secure checkout to pay by card."}
+        </div>
       </div></div>
       <div className="bookbar">
-        <button className="btn gold" disabled={s.offline} onClick={() => buyTicket(v.id, t.id, qty)}>{s.offline ? 'Offline — reconnect to pay' : `Pay ${fmt(total)}`}</button>
+        <button className="btn gold" disabled={s.offline || s.payBusy || notReady}
+          onClick={() => startPaystackPayment('ticket', v.id, subtotal, null, { venueName: v.name, ticketId: t.id, ticketName: t.name, price: t.price, qty, name: people.me.name })}>
+          {s.offline ? 'Offline — reconnect to pay' : s.payBusy ? 'Starting payment…' : `Pay ${fmt(total)}`}
+        </button>
       </div>
     </>
   );
