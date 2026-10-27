@@ -282,7 +282,7 @@ function ClubCard({ v }) {
         <FavBtn vid={v.id} />
         <div className="covtag">
           <div className="nm">{v.name}</div>
-          <div className="ar"><Pin />{v.area}{s.nearMe ? ` — ${v.dist} km` : ''}</div>
+          <div className="ar">{v.area}{s.nearMe ? ` — ${v.dist} km` : ''}</div>
         </div>
       </div>
       <div className="meta">
@@ -384,8 +384,8 @@ export function MapScreen() {
       if (dead || !mapEl.current || mapObj.current) return;
       const map = L.map(mapEl.current, { zoomControl: false }).setView([-26.17, 28.01], 11);
       L.control.zoom({ position: 'bottomright' }).addTo(map);
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap &copy; CARTO', maxZoom: 19,
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors', maxZoom: 19, className: 'dark-tiles',
       }).addTo(map);
       venues.filter((v) => v.status === 'live' && v.lat && v.lng).forEach((v) => {
         const icon = L.divIcon({

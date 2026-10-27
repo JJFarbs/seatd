@@ -648,6 +648,7 @@ details.faq{background:linear-gradient(180deg,rgba(30,23,41,.5),rgba(15,11,21,.9
 
 /* ---- real map (Leaflet) ---- */
 .leaflet-container{background:#0a0710;font-family:var(--body);}
+.dark-tiles{filter:invert(1) hue-rotate(180deg) saturate(.55) brightness(.82) contrast(.95);}
 .club-pin{background:none;border:none;}
 .club-pin-dot{
   display:block;width:14px;height:14px;border-radius:50%;
