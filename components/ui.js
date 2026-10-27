@@ -12,7 +12,7 @@ const paths = {
   ticket: (<><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2 2 2 0 0 0 0 4 2 2 0 0 1-2 2H5a2 2 0 0 1-2-2 2 2 0 0 0 0-4z" /><path d="M14 6v12" strokeDasharray="2 3" /></>),
   store: <path d="M3 9l1.5-5h15L21 9M3 9v11h18V9M3 9h18M9 13h6" />,
   chart: <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />,
-  heart: <path d="M12 21s-7.5-4.6-10-9.6C.6 8.2 2.6 4.5 6.4 4.5c2.2 0 3.9 1.2 5.6 3.3 1.7-2.1 3.4-3.3 5.6-3.3 3.8 0 5.8 3.7 4.4 6.9C19.5 16.4 12 21 12 21z" />,
+  heart: <path transform="translate(0 -.8)" d="M12 21s-7.5-4.6-10-9.6C.6 8.2 2.6 4.5 6.4 4.5c2.2 0 3.9 1.2 5.6 3.3 1.7-2.1 3.4-3.3 5.6-3.3 3.8 0 5.8 3.7 4.4 6.9C19.5 16.4 12 21 12 21z" />,
   bell: <path d="M18 9a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8M10 21a2.4 2.4 0 0 0 4 0" />,
   back: <path d="M15 5L8 12l7 7" />,
   arrow: <path d="M5 12h14M13 6l6 6-6 6" />,
@@ -159,7 +159,7 @@ export function FavBtn({ vid }) {
       onClick={(e) => { e.stopPropagation(); toggleFav(vid); setBeat(true); setTimeout(() => setBeat(false), 500); }}
     >
       <svg viewBox="0 0 24 24" fill={on ? '#0B0710' : 'none'} stroke={on ? '#0B0710' : '#fff'} strokeWidth="2" strokeLinejoin="round">
-        <path d="M12 21s-7.5-4.6-10-9.6C.6 8.2 2.6 4.5 6.4 4.5c2.2 0 3.9 1.2 5.6 3.3 1.7-2.1 3.4-3.3 5.6-3.3 3.8 0 5.8 3.7 4.4 6.9C19.5 16.4 12 21 12 21z" />
+        <path transform="translate(0 -.8)" d="M12 21s-7.5-4.6-10-9.6C.6 8.2 2.6 4.5 6.4 4.5c2.2 0 3.9 1.2 5.6 3.3 1.7-2.1 3.4-3.3 5.6-3.3 3.8 0 5.8 3.7 4.4 6.9C19.5 16.4 12 21 12 21z" />
       </svg>
     </button>
   );
