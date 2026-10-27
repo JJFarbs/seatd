@@ -500,11 +500,11 @@ function FloorMap({ v, tables }) {
         <svg viewBox="0 0 340 360" width="100%">
           <rect x="6" y="6" width="328" height="348" rx="20" fill="none" stroke="#2B2336" strokeWidth="1.5" />
           <rect x="120" y="18" width="100" height="26" rx="8" fill="rgba(122,77,255,.18)" stroke="#7A4DFF" />
-          <text x="170" y="35" textAnchor="middle" fontFamily="Anton" fontSize="12" fill="#b9a6ff">DJ BOOTH</text>
+          <text x="170" y="35" textAnchor="middle" fontFamily="Outfit" fontWeight="800" fontSize="12" fill="#b9a6ff">DJ BOOTH</text>
           <rect x="92" y="110" width="156" height="160" rx="14" fill="url(#dance)" />
-          <text x="170" y="195" textAnchor="middle" fontFamily="Anton" fontSize="13" fill="rgba(245,240,250,.55)">DANCE FLOOR</text>
+          <text x="170" y="195" textAnchor="middle" fontFamily="Outfit" fontWeight="800" fontSize="13" fill="rgba(245,240,250,.55)">DANCE FLOOR</text>
           <rect x="300" y="250" width="28" height="96" rx="8" fill="rgba(43,212,255,.12)" stroke="#2BD4FF" />
-          <text x="314" y="300" textAnchor="middle" fontFamily="Anton" fontSize="11" fill="#9fe9ff" transform="rotate(90 314 300)">BAR</text>
+          <text x="314" y="300" textAnchor="middle" fontFamily="Outfit" fontWeight="800" fontSize="11" fill="#9fe9ff" transform="rotate(90 314 300)">BAR</text>
           <defs><linearGradient id="dance" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="rgba(255,61,174,.10)" /><stop offset="1" stopColor="rgba(43,212,255,.10)" /></linearGradient></defs>
           {tables.map((t) => {
             const m = tierMeta[t.tier], selOn = s.selTable === t.id;
@@ -515,7 +515,7 @@ function FloorMap({ v, tables }) {
               <g key={t.id} className={`tbl ${t.booked ? 'booked' : ''} ${!t.booked && !selOn ? 'glow' : ''}`}
                 onClick={() => { if (!t.booked) mutate((x) => { x.selTable = t.id; }); }}>
                 <rect x={t.x} y={t.y} width={t.w} height={t.h} rx="9" fill={fill} stroke={stroke} strokeWidth={selOn ? 2.5 : 1.5} />
-                <text x={t.x + t.w / 2} y={t.y + t.h / 2 + 4} textAnchor="middle" fontFamily="Anton" fontSize="13" fill={txtc} style={{ pointerEvents: 'none' }}>{t.id}</text>
+                <text x={t.x + t.w / 2} y={t.y + t.h / 2 + 4} textAnchor="middle" fontFamily="Outfit" fontWeight="800" fontSize="13" fill={txtc} style={{ pointerEvents: 'none' }}>{t.id}</text>
               </g>
             );
           })}

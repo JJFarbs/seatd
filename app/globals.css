@@ -1,10 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Anton&family=Unbounded:wght@400;600;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
   :root{
     --ink:#0B0710; --surface:#141019; --surface-2:#1C1626; --line:#2B2336;
     --magenta:#FF3DAE; --violet:#7A4DFF; --blue:#2BD4FF; --gold:#FFC24B; --teal:#3FE0C0;
     --txt:#F5F0FA; --muted:#9A8FB0; --ok:#3FE0A0; --warn:#FF6B6B;
-    --display:'Unbounded','Anton',system-ui,sans-serif; --body:'Space Grotesk','Inter',system-ui,-apple-system,sans-serif;
+    --display:'Outfit','Plus Jakarta Sans',system-ui,sans-serif; --body:'Plus Jakarta Sans','Inter',system-ui,-apple-system,sans-serif;
     --lime:#C8FF3D;
     --shadow-card:0 4px 24px -8px rgba(0,0,0,.55);
     --shadow-pop:0 18px 50px -12px rgba(0,0,0,.7);
@@ -536,22 +536,22 @@ details.faq{background:linear-gradient(180deg,rgba(30,23,41,.5),rgba(15,11,21,.9
 .legend span{opacity:.9;}
 
 /* ============================================================
-   UI v3 — NIGHT OUT. Club-poster energy: Unbounded display,
+   UI v3 — NIGHT OUT. Club-poster energy: Outfit display,
    acid-lime CTAs, outlined mastheads, ticker strips.
    ============================================================ */
 
-/* Unbounded is WIDE — rescale display type */
-.h1{font-size:clamp(22px,3.4vw,38px);font-weight:800;line-height:1.04;letter-spacing:-.01em;text-shadow:none;}
-.h2{font-size:clamp(15px,1.9vw,22px);font-weight:800;}
-.covtag .nm{font-size:18px;font-weight:800;letter-spacing:0;}
-.summary .total .amt{font-size:22px;font-weight:800;}
-.featurecard .n{font-size:19px;font-weight:800;}
-.pstats .n{font-size:18px;font-weight:800;}
-.stat .box .n{font-size:18px;font-weight:800;}
-.stepper .val{font-size:20px;font-weight:800;}
-.timerbox .time{font-size:18px;font-weight:800;}
-.availability .a .n{font-size:15px;font-weight:800;}
-.eventcard .day .d1{font-size:13px;font-weight:800;}
+/* Outfit display type sizing */
+.h1{font-size:clamp(28px,4.2vw,46px);font-weight:800;line-height:1.04;letter-spacing:-.01em;text-shadow:none;}
+.h2{font-size:clamp(19px,2.3vw,27px);font-weight:800;}
+.covtag .nm{font-size:23px;font-weight:800;letter-spacing:0;}
+.summary .total .amt{font-size:27px;font-weight:800;}
+.featurecard .n{font-size:23px;font-weight:800;}
+.pstats .n{font-size:22px;font-weight:800;}
+.stat .box .n{font-size:22px;font-weight:800;}
+.stepper .val{font-size:24px;font-weight:800;}
+.timerbox .time{font-size:22px;font-weight:800;}
+.availability .a .n{font-size:18px;font-weight:800;}
+.eventcard .day .d1{font-size:16px;font-weight:800;}
 .pass .det .v{font-family:var(--body);font-weight:700;}
 .av{font-family:var(--body);font-weight:800;}
 .miniav{font-family:var(--body);font-weight:800;}
@@ -612,7 +612,7 @@ details.faq{background:linear-gradient(180deg,rgba(30,23,41,.5),rgba(15,11,21,.9
 
 /* ---- poster cards ---- */
 .cover{height:210px;}
-.covtag .nm{font-size:20px;}
+.covtag .nm{font-size:24px;}
 .card{border-radius:26px;}
 @media (hover:hover){
   .card:hover{transform:translateY(-6px) rotate(-.4deg);border-color:rgba(200,255,61,.4);
