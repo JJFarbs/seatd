@@ -124,7 +124,7 @@ function ClubRequests() {
                 <Deadline r={r} who="club" />
                 <div className="sub" style={{ fontSize: 14, marginTop: 12, color: 'var(--txt)' }}>{r.slotTime ? 'Reservation' : tierMeta[r.tier].label} <b>{r.table}</b> — {r.slotTime ? `${r.party || r.men} guests` : `${(r.men || 0) + (r.women || 0)} guests`}</div>
                 <div className="sub" style={{ fontSize: 13, marginTop: 4 }}>Total booking <b style={{ color: 'var(--txt)' }}>{fmt(r.total)}</b> · outstanding {fmt(amountOutstanding(r))}</div>
-                <div className="sub" style={{ fontSize: 12, marginTop: 4 }}>{r.splitPay ? 'Split-pay active' : 'Paid by host'} · {paidCount(r)} paid · promoter {r.promo || '—'}</div>
+                <div className="sub" style={{ fontSize: 12, marginTop: 4 }}>{r.splitPay ? 'Split-pay active' : 'Paid by host'} · {paidCount(r)} paid</div>
                 <PaymentRows r={r} editable={false} />
                 <div className="actions">
                   <button className="btn ghost sm" style={{ flex: 1 }} onClick={() => decide(r.id, 'rejected')}>Decline</button>
@@ -703,7 +703,6 @@ function ClubInsights() {
           <div className="minirow"><span>Prepaid bar credit</span><b>{fmt(confirmed.reduce((a, r) => a + (r.min || 0), 0))}</b></div>
           <div className="minirow"><span>Ticket sales ({ticketSales.reduce((a, p) => a + (p.qty || 0), 0)})</span><b>{fmt(ticketRevenue)}</b></div>
           <div className="minirow"><span>Seat&apos;d service fees</span><b>{fmt(service)}</b></div>
-          <div className="minirow"><span>Promoter commission owed</span><b>{fmt(Math.round(revenue * 0.05))}</b></div>
         </div>
       </div></div>
       <ClubTabbar />

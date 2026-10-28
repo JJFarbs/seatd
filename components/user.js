@@ -758,14 +758,6 @@ export function BookingScreen() {
             <div className={`tog ${s.splitPay ? 'on' : ''}`} role="switch" aria-checked={s.splitPay} onClick={() => mutate((x) => { x.splitPay = !x.splitPay; })}><i /></div>
           </div>
         </div>
-        {!rest && <div className="promobox">
-          <div className="row">
-            <div><div style={{ fontWeight: 800, fontSize: 15 }}>Promoter code</div><div className="meta2">Tracks commission and gives the group priority.</div></div>
-            <span className="badge" style={{ background: 'rgba(255,194,75,.18)', color: 'var(--gold)' }}>{s.promoterCode}</span>
-          </div>
-          <input className="input" style={{ marginTop: 10 }} placeholder="PROMO CODE" value={s.promoterCode}
-            onChange={(e) => mutate((x) => { x.promoterCode = e.target.value.toUpperCase(); })} />
-        </div>}
         <div className="summary">
           {rest ? <div className="li"><span>Party</span><b>{t.party} guest{t.party === 1 ? '' : 's'}</b></div>
             : <div className="li"><span>Guests</span><b>{s.men}</b></div>}
@@ -800,7 +792,7 @@ export function PayScreen() {
       ...(t.slot ? { slotDate: s.selSlot.date, slotTime: s.selSlot.time, party: t.party } : {}),
       venueName: v.name, tableId: t.id, tier: t.tier, men: t.slot ? t.party : s.men, women: 0, min: t.min,
       myShare: m.myShare, splitPay: s.splitPay, invited: s.splitPay ? s.invited.slice() : [],
-      promo: s.promoterCode, who: people.me.name || 'You', payments: splitPaymentsFor(t),
+      promo: '', who: people.me.name || 'You', payments: splitPaymentsFor(t),
     });
   };
   return (

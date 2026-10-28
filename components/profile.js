@@ -37,12 +37,6 @@ export function ProfileScreen() {
               );
             })()}
           </div>
-          <div className="promobox" style={{ textAlign: 'left', marginLeft: 'auto', marginRight: 'auto', maxWidth: 560 }}>
-            <div className="row">
-              <div><div style={{ fontWeight: 800 }}>Promoter mode</div><div className="meta2">Share your link and earn 8% on prepaid entry fees.</div></div>
-              <span className="badge" style={{ background: 'rgba(255,194,75,.18)', color: 'var(--gold)' }}>{s.promoterCode}</span>
-            </div>
-          </div>
         </div>
         <div className="pad">
           <div className="featuregrid" style={{ gridTemplateColumns: 'repeat(2,minmax(0,1fr))' }}>
@@ -251,37 +245,34 @@ export function LegalScreen() {
             <h3>8. Cancellations, no-shows &amp; refunds</h3>
             <p>You may cancel an unconfirmed booking before a Venue approves it. Once a Venue has confirmed a booking or ticket, cancellation and refund eligibility is at that Venue&apos;s discretion, communicated via the Venue&apos;s listed VIP contact. Automatic refunds apply where: (a) a Venue declines a request, or (b) a split-pay booking auto-cancels because not everyone paid in time. Refunds are returned to the original payment method within 3–5 business days.</p>
 
-            <h3>9. Promoter program</h3>
-            <p>Promoter codes are used to track referral commissions payable by Venues to promoters; they do not change the price a guest pays. Misuse of promoter codes (including self-referral fraud) may result in suspension of the promoter account and forfeiture of unpaid commissions.</p>
-
-            <h3>10. For venue &amp; club owners</h3>
+            <h3>9. For venue &amp; club owners</h3>
             <p>If you register a Venue on Seat&apos;d, you confirm you are authorised to represent that Venue and to accept bookings, list tables, tickets, pricing and a bottle/drink menu on its behalf. You are responsible for keeping your listed availability, pricing and layout accurate, for honouring confirmed bookings and tickets, and for all decisions relating to entry, service and conduct on your premises. Seat&apos;d may review, approve, suspend or remove a Venue listing at its discretion, including for inaccurate listings, repeated guest complaints, or non-payment of platform fees.</p>
 
-            <h3>11. Acceptable use</h3>
+            <h3>10. Acceptable use</h3>
             <p>You agree not to: misrepresent your identity or age; use the Service for any unlawful purpose; harass, threaten or defraud other users or Venues; attempt to circumvent payment, security or rate-limiting measures; scrape or resell listings without permission; or upload content that is defamatory, obscene, or infringes another person&apos;s rights. We may suspend or terminate accounts that breach this section.</p>
 
-            <h3>12. Reviews &amp; user content</h3>
+            <h3>11. Reviews &amp; user content</h3>
             <p>Reviews, messages, profile photos and other content you submit must be your own honest experience or lawful content you have the right to share. You grant Seat&apos;d a licence to display this content within the Service. We may remove content that violates these Terms or applicable law, and we do not guarantee that reviews reflect every guest&apos;s experience.</p>
 
-            <h3>13. Assumption of risk</h3>
+            <h3>12. Assumption of risk</h3>
             <p>Nightlife venues involve inherent risks, including but not limited to alcohol service, crowded spaces, and late-night travel. You attend Venues at your own risk. Venues may refuse entry or remove a guest for intoxication, dress code, capacity, or safety reasons, and Seat&apos;d is not liable for such decisions or for any injury, loss or damage arising from your attendance at a Venue.</p>
 
-            <h3>14. Disclaimers &amp; limitation of liability</h3>
+            <h3>13. Disclaimers &amp; limitation of liability</h3>
             <p>The Service is provided &quot;as is&quot; without warranties of any kind, express or implied. To the maximum extent permitted by law, Seat&apos;d&apos;s total liability to you for any claim arising from your use of the Service is limited to the amount you paid to Seat&apos;d in the 3 months preceding the claim. Seat&apos;d is not liable for indirect, incidental or consequential loss, or for the acts or omissions of any Venue or other user.</p>
 
-            <h3>15. Indemnity</h3>
+            <h3>14. Indemnity</h3>
             <p>You agree to indemnify and hold Seat&apos;d harmless from any claim, loss or expense (including reasonable legal costs) arising from your breach of these Terms, your misuse of the Service, or your conduct at a Venue.</p>
 
-            <h3>16. Suspension &amp; termination</h3>
+            <h3>15. Suspension &amp; termination</h3>
             <p>We may suspend or close your account at any time for breach of these Terms, suspected fraud, or misuse of the Service. You may close your account at any time by contacting <a href="mailto:support@seatedbookings.com" style={{ color: 'var(--blue)' }}>support@seatedbookings.com</a>. Sections of these Terms that by their nature should survive termination (including liability, indemnity and governing law) will continue to apply.</p>
 
-            <h3>17. Changes to these terms</h3>
+            <h3>16. Changes to these terms</h3>
             <p>We may update these Terms from time to time as the Service evolves. Material changes will be reflected by updating the effective date above. Continued use of the Service after changes take effect constitutes acceptance of the updated Terms.</p>
 
-            <h3>18. Governing law &amp; disputes</h3>
+            <h3>17. Governing law &amp; disputes</h3>
             <p>These Terms are governed by the laws of the Republic of South Africa. Any dispute arising from these Terms or your use of the Service is subject to the non-exclusive jurisdiction of the South African courts, without prejudice to your statutory rights as a consumer under the Consumer Protection Act.</p>
 
-            <h3>19. Contact</h3>
+            <h3>18. Contact</h3>
             <p>Questions about these Terms can be sent to <a href="mailto:support@seatedbookings.com" style={{ color: 'var(--blue)' }}>support@seatedbookings.com</a>.</p>
           </>
         )}
@@ -293,7 +284,7 @@ export function LegalScreen() {
 
             <h3>2. Information we collect</h3>
             <p><b>Account &amp; profile:</b> name, username, email address, password (stored securely by our authentication provider, never in plain text), optional bio, and profile photo.</p>
-            <p><b>Booking &amp; ticket data:</b> the tables you book, tickets you buy, party size, amounts paid, promoter codes used, and booking references.</p>
+            <p><b>Booking &amp; ticket data:</b> the tables you book, tickets you buy, party size, amounts paid, and booking references.</p>
             <p><b>Social features:</b> friends/crew connections, direct messages, table group chats, favourites, and notifications you send or receive within the app.</p>
             <p><b>Venue data (club owners):</b> venue details, floor layout, ticket types and pricing, bottle menu, and the location you place on the map.</p>
             <p><b>Location:</b> if you tap &quot;Find me&quot; on the map, we request your device&apos;s GPS location via your browser — only with your permission, and only to centre the map. We do not track your location in the background.</p>
