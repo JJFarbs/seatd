@@ -146,8 +146,8 @@ export function PreviousBookings() {
   const bookings = uid ? s.requests.filter((r) => isPastItem(r) && (r.userId === uid || (r.payments || []).some((p) => p.id === uid))) : [];
   const tickets = uid ? s.ticketPurchases.filter((p) => isPastItem(p) && p.userId === uid) : [];
   const items = [
-    ...bookings.map((r) => ({ id: r.id, at: r.slotDate ? Date.parse(r.slotDate) : r.createdAt, title: `${r.venue} — ${r.table}`, sub: `${r.slotTime ? 'Reservation' : 'Table'} · ${(r.party || r.men + r.women)} guests`, total: r.paidNow || r.total, status: r.status, code: r.code, date: r.slotDate ? slotDay(r.slotDate) + ' · ' + r.slotTime : r.date })),
-    ...tickets.map((p) => ({ id: p.id, at: p.createdAt, title: `${p.venue} — ${p.ticketName}`, sub: `${p.qty}× ticket`, total: p.total, status: p.status, code: p.code, date: p.date })),
+    ...bookings.map((r) => ({ id: r.id, at: r.slotDate ? Date.parse(r.slotDate) : r.createdAt, title: `${r.venue} — ${r.table}`, sub: `${r.slotTime ? 'Reservation' : 'Table'} · ${(r.party || r.men + r.women)} guests`, total: r.paidNow || r.total, status: r.status, code: r.code, date: r.slotDate ? slotDay(r.slotDate) + (r.slotTime ? ' · ' + r.slotTime : '') : r.date })),
+    ...tickets.map((p) => ({ id: p.id, at: p.eventDate ? Date.parse(p.eventDate) : p.createdAt, title: `${p.venue} — ${p.ticketName}`, sub: `${p.qty}× ticket`, total: p.total, status: p.status, code: p.code, date: p.eventDate ? slotDay(p.eventDate) : p.date })),
   ].sort((a, b) => (b.at || 0) - (a.at || 0));
   const label = (st) => (st === 'checkedin' ? 'ATTENDED' : st === 'confirmed' ? 'COMPLETED' : String(st || '').toUpperCase());
   return (

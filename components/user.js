@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
-import { AREAS, GENRES, CUISINES, tierMeta, fmt, serviceFee, guestFee, slotDay, nextDays, searchClubs, todayStr } from '@/lib/data';
+import { AREAS, GENRES, CUISINES, tierMeta, fmt, serviceFee, guestFee, isoToday, slotDay, nextDays, searchClubs, todayStr } from '@/lib/data';
 import {
   S, useApp, mutate, venues, people, venue, tablesFor, bookingMath, splitPaymentsFor, paidCount,
   amountOutstanding, allPaid, adjustedShareAmount, tableCostRecovered, publicTableForBooking,
@@ -531,7 +531,7 @@ function FloorMap({ v, tables }) {
 }
 function TicketsTab({ v }) {
   const s = useApp();
-  const tickets = ticketsFor(v.id);
+  const tickets = ticketsFor(v.id).filter((t) => !t.date || t.date >= isoToday()); // past-dated tickets are no longer on sale
   return (
     <>
       <div className="eyebrow" style={{ marginTop: 14 }}>Single tickets</div>
@@ -553,7 +553,7 @@ function TicketRow({ t }) {
         <div>
           <div className="eyebrow" style={{ color: 'var(--gold)' }}>Entry ticket</div>
           <div style={{ fontSize: 17, fontWeight: 800 }}>{t.name}</div>
-          <div className="meta2">{soldOut ? 'Sold out' : `${t.remaining} left`}</div>
+          <div className="meta2">{t.date ? `${slotDay(t.date)} · ` : ''}{soldOut ? 'Sold out' : `${t.remaining} left`}</div>
         </div>
         <span className="badge" style={{ background: 'rgba(255,194,75,.15)', color: 'var(--gold)' }}>{fmt(t.price)}</span>
       </div>
@@ -1074,7 +1074,7 @@ export function MyBookings() {
                 <div className="row">
                   <div>
                     <div className="nm" style={{ fontSize: 17, fontWeight: 800 }}>{p.venue} — {p.ticketName}</div>
-                    <div className="meta2">{p.qty}× ticket · {fmt(p.total)} paid · {p.date}</div>
+                    <div className="meta2">{p.qty}× ticket · {fmt(p.total)} paid · {p.eventDate ? 'event ' + slotDay(p.eventDate) : p.date}</div>
                   </div>
                   <StatusChip st={p.status === 'checkedin' ? 'checkedin' : 'confirmed'} />
                 </div>
@@ -1092,7 +1092,7 @@ export function MyBookings() {
                 <div className="row">
                   <div>
                     <div className="nm" style={{ fontSize: 17, fontWeight: 800 }}>{r.venue} — {r.table}</div>
-                    <div className="meta2">{r.slotTime ? 'Reservation' : tierMeta[r.tier].label} · {r.men + r.women} guests · {r.date || ''}</div>
+                    <div className="meta2">{r.slotTime ? 'Reservation' : tierMeta[r.tier].label} · {r.men + r.women} guests · {r.slotDate && !r.slotTime ? 'event ' + slotDay(r.slotDate) : r.date || ''}</div>
                   </div>
                   <StatusChip st={r.status} />
                 </div>

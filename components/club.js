@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Chart as ChartJS, registerables } from 'chart.js';
 import { Bar, Line } from 'react-chartjs-2';
-import { AREAS, ALL_SLOTS, DEFAULT_SLOTS, tierMeta, fmt, serviceFee, slotDay } from '@/lib/data';
+import { AREAS, ALL_SLOTS, DEFAULT_SLOTS, tierMeta, fmt, serviceFee, slotDay, isoToday } from '@/lib/data';
 import {
   useApp, mutate, venues, venue, clubVenue, tablesFor, allPaid, paidCount,
   amountOutstanding, decide, scanNext, toast, syncVenueToDb, saveVenueLayout,
@@ -215,7 +215,17 @@ function ClubManage() {
             <div className="featurecard"><div className="n">22:00</div><div className="l">Doors open</div></div>
           </div>
         )}
-        {v.kind === 'restaurant' ? <ReservationSettings v={v} /> : <TableLayoutEditor v={v} />}
+        {v.kind === 'restaurant' ? <ReservationSettings v={v} /> : (
+          <div className="summary" style={{ maxWidth: 780 }}>
+            <div className="eyebrow">Next event date</div>
+            <div className="meta2" style={{ marginTop: 4 }}>Table bookings are stamped with this date. Guests&apos; bookings move to Previous bookings 24 hours after the night is over.</div>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginTop: 12 }}>
+              <input className="input" type="date" min={isoToday()} value={v.eventDate || ''} onChange={(e) => mutate(() => { v.eventDate = e.target.value || null; })} style={{ width: 180 }} />
+              <button className="btn sm" style={{ width: 'auto', padding: '0 18px' }} onClick={() => { syncVenueToDb(v); toast('Event date saved'); }}>Save date</button>
+            </div>
+          </div>
+        )}
+        {v.kind !== 'restaurant' && <TableLayoutEditor v={v} />}
         <FeeSettings v={v} />
         <TicketEditor v={v} />
         <MenuEditor v={v} />
@@ -417,6 +427,7 @@ function TicketEditor({ v }) {
       const t = (v.tickets || []).find((x) => x.id === id);
       if (!t) return;
       if (key === 'name') t.name = raw;
+      else if (key === 'date') t.date = raw || null;
       else { const val = parseInt(String(raw).replace(/\D/g, ''), 10); t[key] = isNaN(val) ? 0 : val; }
     });
   };
@@ -429,6 +440,8 @@ function TicketEditor({ v }) {
         <div className="minirow" key={t.id} style={{ flexWrap: 'wrap', gap: 8 }}>
           <input className="input" value={t.name} onChange={setField(t.id, 'name')} style={{ flex: '1 1 160px', minHeight: 38, padding: '6px 10px' }} />
           <span style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <label className="meta2" style={{ fontSize: 11 }}>Event date</label>
+            <input className="input" type="date" min={isoToday()} value={t.date || ''} onChange={setField(t.id, 'date')} style={{ width: 150, minHeight: 38, padding: '6px 10px' }} />
             <label className="meta2" style={{ fontSize: 11 }}>Price R</label>
             <input className="input" inputMode="numeric" value={t.price} onChange={setField(t.id, 'price')} style={{ width: 84, minHeight: 38, padding: '6px 10px' }} />
             <label className="meta2" style={{ fontSize: 11 }}>Qty</label>

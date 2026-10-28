@@ -1,6 +1,6 @@
 import { dbFor } from '@/lib/db';
 import { verifyTransaction } from '@/lib/paystack';
-import { refCode, todayStr } from '@/lib/data';
+import { refCode, todayStr, isoToday } from '@/lib/data';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,6 +48,10 @@ export async function POST(req) {
         promo: m.promo, date_label: todayStr(), payments: m.payments || [], user_id: user.id, paystack_ref: reference,
         ...(m.slotTime ? { slot_date: m.slotDate, slot_time: m.slotTime, party: m.party } : {}),
       };
+      if (!m.slotTime) { // club table: stamp the venue's current event date so it can move to Previous bookings after the night
+        const { data: vn } = await client.from('venues').select('event_date').eq('id', pending.venue_id).single();
+        if (vn?.event_date && vn.event_date >= isoToday()) row.slot_date = vn.event_date;
+      }
       const { error } = await client.from('bookings').insert(row);
       if (error) throw error;
       result = { bookingId: id, code };
@@ -61,10 +65,13 @@ export async function POST(req) {
     } else if (pending.kind === 'ticket') {
       const id = 'tp' + Date.now();
       const code = 'TKT-' + Math.random().toString(36).slice(2, 8).toUpperCase();
+      const { data: vn } = await client.from('venues').select('tickets').eq('id', pending.venue_id).single();
+      const tdef = (Array.isArray(vn?.tickets) ? vn.tickets : []).find((x) => x.id === m.ticketId);
       const row = {
         id, venue_id: pending.venue_id, venue_name: m.venueName, ticket_id: m.ticketId, ticket_name: m.ticketName,
         price: m.price, qty: m.qty, subtotal: pending.subtotal, service_fee: pending.fee, total: pending.amount,
         status: 'confirmed', code, user_id: user.id, name: m.name, date_label: todayStr(), paystack_ref: reference,
+        event_date: tdef?.date || null,
       };
       const { error } = await client.from('ticket_purchases').insert(row);
       if (error) throw error;
