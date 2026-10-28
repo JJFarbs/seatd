@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
-import { AREAS, GENRES, tierMeta, fmt, serviceFee, searchClubs, todayStr } from '@/lib/data';
+import { AREAS, GENRES, CUISINES, tierMeta, fmt, serviceFee, searchClubs, todayStr } from '@/lib/data';
 import {
   S, useApp, mutate, venues, people, venue, tablesFor, bookingMath, splitPaymentsFor, paidCount,
   amountOutstanding, allPaid, adjustedShareAmount, tableCostRecovered, publicTableForBooking,
@@ -302,6 +302,7 @@ export function Discover() {
   const s = useApp();
   let list = venues.filter((v) => v.status === 'live');
   if (s.showFavs) list = list.filter((v) => s.favs.includes(v.id));
+  if (s.kind !== 'all') list = list.filter((v) => (v.kind || 'club') === s.kind);
   if (s.area !== 'All') list = list.filter((v) => v.area === s.area);
   if (s.genre !== 'All') list = list.filter((v) => (v.genre || '').toLowerCase().includes(s.genre.toLowerCase()));
   const res = searchClubs(list, s.clubSearch);
@@ -316,7 +317,7 @@ export function Discover() {
           <div className="mast-kicker" suppressHydrationWarning>
             {new Date().toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' })} — Joburg
           </div>
-          <div className="mast-title">Tonight</div>
+          <div className="mast-title">{s.kind === 'restaurant' ? 'Dine' : 'Tonight'}</div>
           <div className="mast-sub">{s.profile ? `Where to, ${(people.me.name || '').split(' ')[0]}?` : 'Find your table'}</div>
         </div>
         {(() => {
@@ -339,17 +340,18 @@ export function Discover() {
             </div>
           );
         })()}
-        <input className="searchbar" type="search" placeholder="Search clubs, areas, music..." style={{ marginTop: 14 }}
+        <input className="searchbar" type="search" placeholder={s.kind === 'restaurant' ? 'Search restaurants, areas, cuisine...' : s.kind === 'club' ? 'Search clubs, areas, music...' : 'Search venues, areas, music, cuisine...'} style={{ marginTop: 14 }}
           value={s.clubSearch} onChange={(e) => mutate((x) => { x.clubSearch = e.target.value; })} />
+        <div className="kindseg" role="tablist">{[['all', 'All'], ['restaurant', 'Restaurants'], ['club', 'Clubs']].map(([k, l]) => <button key={k} role="tab" aria-selected={s.kind === k} className={s.kind === k ? 'on' : ''} onClick={() => mutate((x) => { x.kind = k; x.genre = 'All'; })}>{l}</button>)}</div>
         <div className="chips">{AREAS.map((a) => <div key={a} className={`chip ${s.area === a ? 'on' : ''}`} onClick={() => mutate((x) => { x.area = a; })}>{a}</div>)}</div>
-        <div className="chips" style={{ paddingTop: 0 }}>{GENRES.map((g) => <div key={g} className={`chip ${s.genre === g ? 'on' : ''}`} onClick={() => mutate((x) => { x.genre = g; })}>{g}</div>)}</div>
+        <div className="chips" style={{ paddingTop: 0 }}>{(s.kind === 'restaurant' ? CUISINES : s.kind === 'club' ? GENRES : GENRES.concat(CUISINES.slice(1))).map((g) => <div key={g} className={`chip ${s.genre === g ? 'on' : ''}`} onClick={() => mutate((x) => { x.genre = g; })}>{g}</div>)}</div>
         <div className="wideactions">
           <button className={`locbtn ${s.nearMe ? 'on' : ''}`} style={{ flex: 1, minWidth: 200 }} onClick={() => mutate((x) => { x.nearMe = !x.nearMe; })}>
             <Pin />{s.nearMe ? 'Sorted by distance from Sandton' : "Sort by what's near me"}
           </button>
           <button className="btn ghost sm" style={{ minWidth: 150 }} onClick={() => mutate((x) => { x.showFavs = !x.showFavs; })}>
             <span style={{ color: 'var(--magenta)', display: 'inline-flex' }}><Icon name="heart" size={18} /></span>
-            {s.showFavs ? 'Show all clubs' : `Favourites (${s.favs.length})`}
+            {s.showFavs ? 'Show all venues' : `Favourites (${s.favs.length})`}
           </button>
         </div>
         {pts.length > 0 && (
@@ -362,7 +364,7 @@ export function Discover() {
         {res.fuzzy && list.length > 0 && <div className="meta2" style={{ marginTop: 14 }}>No exact match for “{s.clubSearch}” — showing the closest matches:</div>}
         <div className="cards stagger">
           {list.length ? list.map((v) => <ClubCard v={v} key={v.id} />)
-            : <Empty><b style={{ color: 'var(--txt)' }}>No clubs found</b><br />Nothing matches “{s.clubSearch || s.genre || s.area}”. Try another name, area or genre.</Empty>}
+            : <Empty><b style={{ color: 'var(--txt)' }}>No venues found</b><br />Nothing matches “{s.clubSearch || s.genre || s.area}”. Try another name, area or genre.</Empty>}
         </div>
       </div></div>
       <UserTabbar />
@@ -586,7 +588,7 @@ function VenueEvents({ v }) {
   );
 }
 function VenueInfo({ v }) {
-  const rows = [['Music genre', v.genre], ['Dress code', v.dress || '—'], ['Parking', v.parking || '—'], ['Minimum spend', 'From ' + fmt(v.minFrom)], ['Opening times', v.open || '—'], ['VIP contact', v.vip || '—'], ['Capacity', (v.capacity || '—') + ' people']];
+  const rows = [[v.kind === 'restaurant' ? 'Cuisine' : 'Music genre', v.genre], ['Dress code', v.dress || '—'], ['Parking', v.parking || '—'], [v.kind === 'restaurant' ? 'Minimum spend per table' : 'Minimum spend', 'From ' + fmt(v.minFrom)], ['Opening times', v.open || '—'], ['VIP contact', v.vip || '—'], ['Capacity', (v.capacity || '—') + ' people']];
   return (
     <>
       <div className="eyebrow" style={{ marginTop: 14 }}>Gallery</div>

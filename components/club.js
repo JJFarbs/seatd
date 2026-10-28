@@ -170,9 +170,14 @@ function ClubManage() {
           <div className="meta"><div className="sub" style={{ fontSize: 13 }}>{v.tagline}</div></div>
         </div>
         <div style={{ maxWidth: 760 }}>
-          {[['name', 'Venue name'], ['tagline', 'Tagline'], ['genre', 'Music / genre'], ['dress', 'Dress code'], ['open', 'Opening times'], ['vip', 'VIP contact']].map(([k, label]) => (
+          {[['name', 'Venue name'], ['tagline', 'Tagline'], ['genre', v.kind === 'restaurant' ? 'Cuisine' : 'Music / genre'], ['dress', 'Dress code'], ['open', 'Opening times'], ['vip', 'VIP contact']].map(([k, label]) => (
             <div className="field" key={k}><label>{label}</label><input className="input" value={f[k]} onChange={set(k)} /></div>
           ))}
+          <div className="field"><label>Venue type</label>
+            <div className="chips" style={{ paddingTop: 0 }}>
+              {[['club', 'Club'], ['restaurant', 'Restaurant']].map(([k, l]) => <div key={k} className={`chip ${(v.kind || 'club') === k ? 'on' : ''}`} onClick={() => mutate(() => { v.kind = k; })}>{l}</div>)}
+            </div>
+          </div>
           <div className="field"><label>Area</label>
             <div className="chips" style={{ paddingTop: 0 }}>
               {AREAS.slice(1).map((a) => <div key={a} className={`chip ${v.area === a ? 'on' : ''}`} onClick={() => mutate(() => { v.area = a; })}>{a}</div>)}

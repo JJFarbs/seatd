@@ -671,3 +671,8 @@ details.faq{background:linear-gradient(180deg,rgba(30,23,41,.5),rgba(15,11,21,.9
 .leaflet-control-zoom a{background:rgba(20,14,28,.9)!important;color:#F5F0FA!important;border-color:rgba(255,255,255,.1)!important;}
 .leaflet-control-attribution{background:rgba(10,7,16,.7)!important;color:#7a7090!important;font-size:9px!important;}
 .leaflet-control-attribution a{color:#9A8FB0!important;}
+
+/* ---- venue type selector ---- */
+.kindseg{display:flex;gap:4px;padding:4px;margin-top:14px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);}
+.kindseg button{flex:1;border:0;background:transparent;color:var(--muted);font-family:var(--body);font-weight:700;font-size:14px;padding:11px 8px;min-height:44px;border-radius:999px;cursor:pointer;transition:.2s;}
+.kindseg button.on{background:var(--lime);color:#0B0710;}
