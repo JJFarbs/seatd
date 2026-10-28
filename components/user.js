@@ -87,7 +87,7 @@ export function PublicTableCard({ pt, mode }) {
   const meId = s.session?.user?.id || 'me';
   const requested = (pt.joinRequests || []).some((j) => j.userId === meId && j.status === 'pending');
   const joined = (pt.joiners || []).some((j) => j.id === meId);
-  const mPrice = publicJoinPrice(pt, 'male'), fPrice = publicJoinPrice(pt, 'female'), spots = publicSpotsOpen(pt);
+  const price = publicJoinPrice(pt), spots = publicSpotsOpen(pt);
   const js = (pt.joiners || []).filter((j) => j.status === 'approved');
   return (
     <div className="publiccard">
@@ -97,7 +97,7 @@ export function PublicTableCard({ pt, mode }) {
           <div style={{ fontSize: 17, fontWeight: 800 }}>{pt.venue} — {pt.table}</div>
           <div className="meta2">Hosted by {pt.owner} · {tierMeta[pt.tier]?.label || 'Table'} · {spots} spots open</div>
         </div>
-        <span className="badge" style={{ background: 'rgba(63,224,192,.14)', color: 'var(--teal)' }}>M {fmt(mPrice)} / F {fmt(fPrice)}</span>
+        <span className="badge" style={{ background: 'rgba(63,224,192,.14)', color: 'var(--teal)' }}>{fmt(price)} to join</span>
       </div>
       {js.length
         ? <div className="joiners">{js.map((j, i) => <span className="miniav" key={i}>{(j.name || '?')[0]}</span>)}<span className="meta2">{js.length} joined — {fmt(js.reduce((a, j) => a + (j.amount || publicJoinPrice(pt, j.gender) || 0), 0))} recovered</span></div>
@@ -107,33 +107,25 @@ export function PublicTableCard({ pt, mode }) {
         : requested || joined
           ? <button className="btn sm" style={{ marginTop: 13 }} disabled>{joined ? 'Already joined' : 'Request sent'}</button>
           : (
-            <div className="splitrow" style={{ marginTop: 13 }}>
-              <button className="btn sm" style={{ flex: 1 }} onClick={() => requestJoinPublic(pt.id, 'male')}>Join as male — {fmt(mPrice)}</button>
-              <button className="btn sm ghost" style={{ flex: 1 }} onClick={() => requestJoinPublic(pt.id, 'female')}>Join as female — {fmt(fPrice)}</button>
-            </div>
+            <button className="btn sm" style={{ marginTop: 13 }} onClick={() => requestJoinPublic(pt.id)}>Join table — {fmt(price)}</button>
           )}
     </div>
   );
 }
 function OwnerPublicControls({ pt }) {
-  const [m, setM] = useState(String(publicJoinPrice(pt, 'male')));
-  const [f, setF] = useState(String(publicJoinPrice(pt, 'female')));
+  const [m, setM] = useState(String(publicJoinPrice(pt)));
   const pending = (pt.joinRequests || []).filter((j) => j.status === 'pending');
   return (
     <div style={{ marginTop: 12 }}>
-      <div className="splitrow">
-        <div className="field" style={{ marginTop: 0, flex: 1 }}><label>Male join price</label>
-          <input className="input" inputMode="numeric" value={m} onChange={(e) => setM(e.target.value)} /></div>
-        <div className="field" style={{ marginTop: 0, flex: 1 }}><label>Female join price</label>
-          <input className="input" inputMode="numeric" value={f} onChange={(e) => setF(e.target.value)} /></div>
-      </div>
-      <button className="btn sm ghost" style={{ marginTop: 8 }} onClick={() => savePublicPrice(pt.id, parseInt(m.replace(/\D/g, ''), 10), parseInt(f.replace(/\D/g, ''), 10))}>Save join prices</button>
+      <div className="field" style={{ marginTop: 0 }}><label>Join price (R)</label>
+        <input className="input" inputMode="numeric" value={m} onChange={(e) => setM(e.target.value)} /></div>
+      <button className="btn sm ghost" style={{ marginTop: 8 }} onClick={() => savePublicPrice(pt.id, parseInt(m.replace(/\D/g, ''), 10))}>Save join price</button>
       <div className="eyebrow" style={{ marginTop: 14, color: 'var(--gold)' }}>Join requests</div>
       {pending.length ? pending.map((j) => (
         <div className="joinreq" key={j.id}>
           <div>
             <div style={{ fontWeight: 800, fontSize: 13 }}>{j.name}</div>
-            <div className="meta2">{j.gender || 'male'} · wants to join for {fmt(j.amount || publicJoinCharge(pt, j.gender))}</div>
+            <div className="meta2">Wants to join for {fmt(j.amount || publicJoinCharge(pt))}</div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button className="btn sm" style={{ width: 'auto', padding: '8px 12px' }} onClick={() => decideJoin(pt.id, j.id, true)}>Approve</button>
@@ -852,8 +844,7 @@ export function JoinPayScreen() {
   if (!pt) return null;
   const v = venue(pt.vid);
   const notReady = !v || v.payoutStatus !== 'active';
-  const gender = aj.gender === 'female' ? 'female' : 'male';
-  const subtotal = publicJoinPrice(pt, gender);
+  const subtotal = publicJoinPrice(pt);
   const fee = guestFee(v, subtotal);
   const total = subtotal + fee;
   return (
@@ -867,7 +858,7 @@ export function JoinPayScreen() {
           <div className="row">
             <div>
               <div className="eyebrow" style={{ color: 'var(--teal)' }}>Public table request</div>
-              <div style={{ fontWeight: 800, fontSize: 17 }}>Join as {gender}</div>
+              <div style={{ fontWeight: 800, fontSize: 17 }}>Join this table</div>
               <div className="meta2">Owner approves your request after payment confirmation.</div>
             </div>
             <span className="badge" style={{ background: 'rgba(63,224,160,.15)', color: 'var(--ok)' }}>{publicSpotsOpen(pt)} seat{publicSpotsOpen(pt) === 1 ? '' : 's'} open</span>
@@ -884,7 +875,7 @@ export function JoinPayScreen() {
       </div></div>
       <div className="bookbar">
         <button className="btn gold" disabled={s.offline || s.payBusy || notReady}
-          onClick={() => startPaystackPayment('join', pt.vid, subtotal, null, { ptId: pt.id, gender, name: people.me.name })}>
+          onClick={() => startPaystackPayment('join', pt.vid, subtotal, null, { ptId: pt.id, name: people.me.name })}>
           {s.offline ? 'Offline — reconnect to pay' : s.payBusy ? 'Starting payment…' : `Pay ${fmt(total)}`}
         </button>
       </div>

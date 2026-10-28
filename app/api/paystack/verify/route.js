@@ -79,7 +79,7 @@ export async function POST(req) {
     } else if (pending.kind === 'join') {
       const id = 'jr' + Date.now();
       const { error } = await client.from('join_requests').insert({
-        id, public_table_id: m.ptId, user_id: user.id, name: m.name, gender: m.gender, amount: pending.subtotal, paystack_ref: reference,
+        id, public_table_id: m.ptId, user_id: user.id, name: m.name, amount: pending.subtotal, paystack_ref: reference,
       });
       if (error) throw error;
       result = { joinId: id, ptId: m.ptId };
