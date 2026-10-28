@@ -123,6 +123,7 @@ function ClubRequests() {
                 </div>
                 <Deadline r={r} who="club" />
                 <div className="sub" style={{ fontSize: 14, marginTop: 12, color: 'var(--txt)' }}>{r.slotTime ? 'Reservation' : tierMeta[r.tier].label} <b>{r.table}</b> — {r.slotTime ? `${r.party || r.men} guests` : `${(r.men || 0) + (r.women || 0)} guests`}</div>
+                {(r.bottles || []).length > 0 && <div className="sub" style={{ fontSize: 13, marginTop: 4, color: 'var(--gold)' }}>Bottles pre-ordered: {r.bottles.map((b) => `${b.qty}× ${b.name}`).join(', ')}</div>}
                 <div className="sub" style={{ fontSize: 13, marginTop: 4 }}>Total booking <b style={{ color: 'var(--txt)' }}>{fmt(r.total)}</b> · outstanding {fmt(amountOutstanding(r))}</div>
                 <div className="sub" style={{ fontSize: 12, marginTop: 4 }}>{r.splitPay ? 'Split-pay active' : 'Paid by host'} · {paidCount(r)} paid</div>
                 <PaymentRows r={r} editable={false} />
@@ -626,7 +627,7 @@ function StaffMode() {
           <div className="eyebrow">Tonight&apos;s confirmed door list</div>
           {list.length ? list.map((r) => (
             <div className="minirow" key={r.id}>
-              <span>{r.who} — {r.table} · {r.men + r.women} guests {r.status === 'checkedin' ? <b style={{ color: 'var(--blue)' }}>· checked in</b> : null}</span>
+              <span>{r.who} — {r.table} · {r.men + r.women} guests{(r.bottles || []).length ? ' · bottles: ' + r.bottles.map((b) => `${b.qty}× ${b.name}`).join(', ') : ''} {r.status === 'checkedin' ? <b style={{ color: 'var(--blue)' }}>· checked in</b> : null}</span>
               <b>{r.code || r.id}</b>
             </div>
           )) : <div className="minirow"><span>No confirmed bookings yet</span><b>—</b></div>}
@@ -635,7 +636,7 @@ function StaffMode() {
           <div className="eyebrow">Tonight&apos;s ticket holders</div>
           {ticketList.length ? ticketList.map((p) => (
             <div className="minirow" key={p.id}>
-              <span>{p.name} — {p.ticketName} · {p.qty} guest{p.qty === 1 ? '' : 's'} {p.status === 'checkedin' ? <b style={{ color: 'var(--blue)' }}>· checked in</b> : null}</span>
+              <span>{p.name} — {p.ticketName} · {p.qty} guest{p.qty === 1 ? '' : 's'}{(p.bottles || []).length ? ' · bottles: ' + p.bottles.map((b) => `${b.qty}× ${b.name}`).join(', ') : ''} {p.status === 'checkedin' ? <b style={{ color: 'var(--blue)' }}>· checked in</b> : null}</span>
               <b>{p.code || p.id}</b>
             </div>
           )) : <div className="minirow"><span>No tickets sold yet</span><b>—</b></div>}

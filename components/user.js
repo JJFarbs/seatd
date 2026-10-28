@@ -9,7 +9,7 @@ import {
   bookingLink, qrPayload, toggleFav, submitReview, addFriendFromDraft, sendBookingInvite,
   makePublic, savePublicPrice, requestJoinPublic, decideJoin,
   markPaid, nativeShare, copyText, addFriend, searchProfiles,
-  ticketsFor, ticketQrPayload, startPaystackPayment, isPastItem, venueSlots, slotCoversLeft, depositFor, slotTable } from '@/lib/store';
+  ticketsFor, ticketQrPayload, startPaystackPayment, isPastItem, cartItems, cartTotal, cartCount, setCartQty, venueSlots, slotCoversLeft, depositFor, slotTable } from '@/lib/store';
 import {
   Icon, Pin, CheckBig, LogoMark, Av, StatusChip, Empty, OfflineBar, Cover, Gallery,
   FavBtn, Stars, StarRating, ReviewRows, Availability, Deadline, Thumb,
@@ -72,7 +72,7 @@ export function PaymentRows({ r, editable }) {
                   if (p.id !== uid) { markPaid(r, p.id); return; }
                   const splitCount = (r.payments || []).length || 1;
                   const feeFree = venue(r.vid)?.feePayer === 'venue';
-                  const mySubtotal = feeFree ? p.amount : Math.round((r.subtotal || 0) / splitCount);
+                  const mySubtotal = feeFree ? p.amount : Math.round(p.amount / 1.05); // venue gets the share minus Seat'd's 5%
                   startPaystackPayment('booking_share', r.vid, mySubtotal, p.amount - mySubtotal, { bookingId: r.id, paymentId: p.id });
                 }}>{p.id === uid ? 'Pay my share' : 'Mark paid'}</button>
             : <span className="badge" style={{ background: p.status === 'paid' ? 'rgba(63,224,160,.15)' : 'rgba(255,194,75,.14)', color: p.status === 'paid' ? 'var(--ok)' : 'var(--gold)' }}>{p.status === 'paid' ? 'PAID' : 'PINGED'}</span>}
@@ -434,7 +434,7 @@ export function VenueScreen() {
   const v = venue(s.venueId);
   if (!v) return null;
   const rest = v.kind === 'restaurant';
-  const tabs = [['tables', rest ? 'Reserve' : 'Tables'], ['tickets', 'Tickets'], ['events', 'Events'], ['info', rest ? 'Info & menu' : 'Club info'], ['reviews', 'Reviews']];
+  const tabs = [['tables', rest ? 'Reserve' : 'Tables'], ['tickets', 'Tickets'], ...(rest ? [] : [['bottles', 'Bottles']]), ['events', 'Events'], ['info', rest ? 'Info & menu' : 'Club info'], ['reviews', 'Reviews']];
   const tables = tablesFor(s.venueId);
   const sel = rest ? null : tables.find((t) => t.id === s.selTable);
   return (
@@ -449,14 +449,16 @@ export function VenueScreen() {
           <div className="covtag"><div className="nm" style={{ fontSize: 24 }}>{v.name}</div><div className="ar">{v.area} · {v.genre}</div></div>
         </div>
       </div>
-      <div className="body"><div className="pad" style={{ paddingBottom: s.venueTab === 'tables' ? 150 : 34 }}>
+      <div className="body"><div className="pad" style={{ paddingBottom: s.venueTab === 'tables' || s.venueTab === 'bottles' ? 150 : 34 }}>
         <div className="subtabs">{tabs.map(([id, label]) => <div key={id} className={`chip ${s.venueTab === id ? 'on' : ''}`} onClick={() => mutate((x) => { x.venueTab = id; })}>{label}</div>)}</div>
         {s.venueTab === 'tables' && (rest ? <ReserveTab v={v} /> : <FloorMap v={v} tables={tables} />)}
         {s.venueTab === 'tickets' && <TicketsTab v={v} />}
+        {s.venueTab === 'bottles' && !rest && <BottlesTab v={v} />}
         {s.venueTab === 'events' && <VenueEvents v={v} />}
         {s.venueTab === 'info' && <VenueInfo v={v} />}
         {s.venueTab === 'reviews' && <VenueReviews v={v} />}
       </div></div>
+      {s.venueTab === 'bottles' && !rest && <BottleBar v={v} />}
       {s.venueTab === 'tables' && rest && <ReserveBar v={v} />}
       {s.venueTab === 'tables' && !rest && (sel ? (
         <div className="bookbar"><div style={{ maxWidth: 640, margin: '0 auto' }}>
@@ -559,6 +561,58 @@ function TicketRow({ t }) {
     </div>
   );
 }
+function BottlesTab({ v }) {
+  useApp();
+  const menu = v.menu || [];
+  const qtyOf = (i) => (cartItems(v).find((c) => c.i === i) || {}).qty || 0;
+  return (
+    <>
+      <div className="eyebrow" style={{ marginTop: 14 }}>Pre-order bottles</div>
+      <div className="sub" style={{ marginTop: 4 }}>Add bottles now and they&apos;re added on top of your table or ticket price at checkout, ready when you arrive.</div>
+      <div className="summary" style={{ marginTop: 14, maxWidth: 680 }}>
+        {menu.length ? menu.map((m, i) => (
+          <div className="minirow" key={i} style={{ alignItems: 'center', gap: 10 }}>
+            <span style={{ flex: 1, minWidth: 0 }}>{m[0]}<br /><b style={{ color: 'var(--txt)' }}>{fmt(m[1])}</b></span>
+            <div className="stepper" style={{ flex: 'none' }}>
+              <button aria-label={`Remove ${m[0]}`} disabled={!qtyOf(i)} onClick={() => setCartQty(v, i, -1)}>−</button>
+              <span className="val">{qtyOf(i)}</span>
+              <button aria-label={`Add ${m[0]}`} onClick={() => setCartQty(v, i, 1)}>+</button>
+            </div>
+          </div>
+        )) : <div className="meta2">Bottle menu coming soon.</div>}
+      </div>
+    </>
+  );
+}
+function BottleBar({ v }) {
+  useApp();
+  const n = cartCount(v);
+  if (!n) return <div className="bookbar"><div className="sub" style={{ textAlign: 'center', paddingBottom: 6 }}>Tap + to add bottles to your booking</div></div>;
+  return (
+    <div className="bookbar"><div style={{ maxWidth: 640, margin: '0 auto' }}>
+      <div className="row" style={{ marginBottom: 12 }}>
+        <div>
+          <div style={{ fontWeight: 700, fontSize: 16 }}>{n} bottle{n === 1 ? '' : 's'} added</div>
+          <div className="sub" style={{ fontSize: 13 }}>{fmt(cartTotal(v))} — added at checkout</div>
+        </div>
+      </div>
+      <div className="splitrow">
+        <button className="btn sm" style={{ flex: 1 }} onClick={() => mutate((x) => { x.venueTab = 'tables'; })}>Book a table</button>
+        <button className="btn sm ghost" style={{ flex: 1 }} onClick={() => mutate((x) => { x.venueTab = 'tickets'; })}>Buy tickets</button>
+      </div>
+    </div></div>
+  );
+}
+function BottleLines({ v, edit }) {
+  const items = cartItems(v);
+  if (!items.length) return null;
+  return (
+    <>
+      {items.map((b) => <div className="li" key={b.i}><span>{b.qty}× {b.name}</span><b>{fmt(b.price * b.qty)}</b></div>)}
+      {edit && <div className="meta2" style={{ cursor: 'pointer', textDecoration: 'underline', padding: '4px 0 0' }} onClick={() => mutate((x) => { x.screen = 'venue'; x.venueTab = 'bottles'; })}>Edit bottles</div>}
+    </>
+  );
+}
 function ReserveTab({ v }) {
   const s = useApp();
   const days = nextDays(14);
@@ -649,6 +703,7 @@ function VenueInfo({ v }) {
       <div className="eyebrow" style={{ marginTop: 20 }}>{v.kind === 'restaurant' ? 'Menu' : 'Bottle menu'}</div>
       <div className="summary" style={{ marginTop: 10 }}>
         {!(v.menu || []).length ? <div className="meta2">Menu coming soon.</div>
+          : v.kind !== 'restaurant' ? <button className="btn sm" onClick={() => mutate((x) => { x.venueTab = 'bottles'; })}>Pre-order bottles</button>
           : v.kind === 'restaurant' ? [...new Set((v.menu || []).map((m) => m[2] || 'Menu'))].map((sec) => (
             <div key={sec}>
               <div className="eyebrow" style={{ marginTop: 10, color: 'var(--lime)' }}>{sec}</div>
@@ -763,6 +818,7 @@ export function BookingScreen() {
             : <div className="li"><span>Guests</span><b>{s.men}</b></div>}
           {!rest && <div className="li"><span>Seats used</span><b style={{ color: overLimit ? 'var(--warn)' : 'var(--txt)' }}>{partySize}/{t.seats}</b></div>}
           <div className="li"><span>{rest ? 'Booking deposit' : 'Table minimum spend'}</span><b>{fmt(t.min)}</b></div>
+          {!rest && <BottleLines v={v} edit />}
           {!t.feeFree && <div className="li"><span>Seat&apos;d service charge (5%)</span><b>{fmt(m.fee)}</b></div>}
           <div className="li"><span>Group payable total</span><b>{fmt(m.chargeTotal)}</b></div>
           <div className="li"><span>Payment pings sent after you pay</span><b>{s.splitPay ? s.invited.length : 0}</b></div>
@@ -789,7 +845,7 @@ export function PayScreen() {
     const mySubtotal = t.feeFree ? m.myShare : Math.round(m.groupTotal / m.splitCount);
     const feeOverride = m.myShare - mySubtotal;
     startPaystackPayment('booking_host', v.id, mySubtotal, feeOverride, {
-      ...(t.slot ? { slotDate: s.selSlot.date, slotTime: s.selSlot.time, party: t.party } : {}),
+      ...(t.slot ? { slotDate: s.selSlot.date, slotTime: s.selSlot.time, party: t.party } : { bottles: cartItems(v).map((b) => ({ i: b.i, qty: b.qty })) }),
       venueName: v.name, tableId: t.id, tier: t.tier, men: t.slot ? t.party : s.men, women: 0, min: t.min,
       myShare: m.myShare, splitPay: s.splitPay, invited: s.splitPay ? s.invited.slice() : [],
       promo: '', who: people.me.name || 'You', payments: splitPaymentsFor(t),
@@ -803,7 +859,8 @@ export function PayScreen() {
       </div>
       <div className="body enter"><div className="pad" style={{ paddingBottom: 130, maxWidth: 680 }}>
         <div className="summary">
-          <div className="li"><span>{t.slot ? 'Booking deposit' : 'Minimum spend subtotal'}</span><b>{fmt(m.groupTotal)}</b></div>
+          <div className="li"><span>{t.slot ? 'Booking deposit' : 'Table minimum spend'}</span><b>{fmt(t.min)}</b></div>
+          {!t.slot && <BottleLines v={v} />}
           {!t.feeFree && <div className="li"><span>Seat&apos;d service charge (5%)</span><b>{fmt(m.fee)}</b></div>}
           <div className="li"><span>Group total</span><b>{fmt(m.chargeTotal)}</b></div>
           <div className="li"><span>Split between</span><b>{m.splitCount} {m.splitCount === 1 ? 'person' : 'people'}</b></div>
@@ -870,7 +927,8 @@ export function TicketPayScreen() {
   const t = v ? ticketsFor(v.id).find((x) => x.id === s.selTicket) : null;
   if (!v || !t) return null;
   const qty = Math.max(1, s.ticketQty || 1);
-  const subtotal = t.price * qty;
+  const bottlesTotal = cartTotal(v);
+  const subtotal = t.price * qty + bottlesTotal;
   const fee = guestFee(v, subtotal);
   const total = subtotal + fee;
   const notReady = v.payoutStatus !== 'active';
@@ -882,7 +940,8 @@ export function TicketPayScreen() {
       </div>
       <div className="body enter"><div className="pad" style={{ paddingBottom: 130, maxWidth: 680 }}>
         <div className="summary">
-          <div className="li"><span>{t.name} × {qty}</span><b>{fmt(subtotal)}</b></div>
+          <div className="li"><span>{t.name} × {qty}</span><b>{fmt(t.price * qty)}</b></div>
+          <BottleLines v={v} edit />
           <div className="li"><span>Seat&apos;d service charge (5%)</span><b>{fmt(fee)}</b></div>
           <div className="total"><span className="sub">You pay now</span><span className="amt">{fmt(total)}</span></div>
         </div>
@@ -892,7 +951,7 @@ export function TicketPayScreen() {
       </div></div>
       <div className="bookbar">
         <button className="btn gold" disabled={s.offline || s.payBusy || notReady}
-          onClick={() => startPaystackPayment('ticket', v.id, subtotal, null, { venueName: v.name, ticketId: t.id, ticketName: t.name, price: t.price, qty, name: people.me.name })}>
+          onClick={() => startPaystackPayment('ticket', v.id, subtotal, null, { venueName: v.name, ticketId: t.id, ticketName: t.name, price: t.price, qty, name: people.me.name, bottles: cartItems(v).map((b) => ({ i: b.i, qty: b.qty })) })}>
           {s.offline ? 'Offline — reconnect to pay' : s.payBusy ? 'Starting payment…' : `Pay ${fmt(total)}`}
         </button>
       </div>
@@ -982,6 +1041,7 @@ export function StatusScreen() {
             <div><div className="k">Party</div><div className="v">{r.men + r.women} guests</div></div>
             <div><div className="k">You paid</div><div className="v">{fmt(r.paidNow || r.total)}</div></div>
             <div><div className="k">Booking ref</div><div className="v">{r.code}</div></div>
+            {(r.bottles || []).length > 0 && <div style={{ gridColumn: '1 / -1' }}><div className="k">Pre-ordered bottles</div><div className="v">{r.bottles.map((b) => `${b.qty}× ${b.name}`).join(', ')}</div></div>}
           </div>
         </div>
         <div className="bypass">
@@ -1154,6 +1214,7 @@ export function TicketPassScreen() {
             <div><div className="k">Qty</div><div className="v">{p.qty}</div></div>
             <div><div className="k">You paid</div><div className="v">{fmt(p.total)}</div></div>
             <div><div className="k">Ref</div><div className="v">{p.code}</div></div>
+            {(p.bottles || []).length > 0 && <div style={{ gridColumn: '1 / -1' }}><div className="k">Pre-ordered bottles</div><div className="v">{p.bottles.map((b) => `${b.qty}× ${b.name}`).join(', ')}</div></div>}
           </div>
         </div>
         <div className="bypass">

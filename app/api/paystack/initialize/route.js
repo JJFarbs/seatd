@@ -23,7 +23,7 @@ export async function POST(req) {
     return Response.json({ ok: false, error: 'Missing required fields' }, { status: 400 });
   }
 
-  const { data: venue } = await db.from('venues').select('id,name,paystack_subaccount_code,payout_status,kind,deposit_pp,deposit_mode,fee_payer,slot_covers,max_party').eq('id', venueId).single();
+  const { data: venue } = await db.from('venues').select('id,name,paystack_subaccount_code,payout_status,kind,deposit_pp,deposit_mode,fee_payer,slot_covers,max_party,menu,tickets').eq('id', venueId).single();
   if (!venue) return Response.json({ ok: false, error: 'Venue not found' }, { status: 404 });
   if (venue.payout_status !== 'active' || !venue.paystack_subaccount_code) {
     return Response.json({ ok: false, error: 'venue_not_ready', message: `${venue.name} hasn't finished payment setup yet` }, { status: 409 });
@@ -33,6 +33,26 @@ export async function POST(req) {
   // split-pay shares (booking_host / booking_share) already have the fee baked into
   // a pre-computed share amount shown to the guest, so the client passes the exact
   // fee portion of that share to keep the charge byte-for-byte what was displayed.
+  // bottle pre-orders: re-price every item from the venue's own menu, never from the browser
+  const sentBottles = Array.isArray(meta?.bottles) ? meta.bottles : [];
+  let bottlesTotal = 0;
+  const bottles = [];
+  for (const b of sentBottles) {
+    const m = (venue.menu || [])[Number(b.i)];
+    const qty = Math.floor(Number(b.qty) || 0);
+    if (!m || qty < 1 || qty > 20) return Response.json({ ok: false, error: 'Invalid bottle order' }, { status: 400 });
+    bottles.push({ i: Number(b.i), name: m[0], price: Number(m[1]) || 0, qty });
+    bottlesTotal += (Number(m[1]) || 0) * qty;
+  }
+  if (meta) { meta.bottles = bottles; meta.bottlesTotal = bottlesTotal; }
+  if (kind === 'ticket') {
+    const tdef = (Array.isArray(venue.tickets) ? venue.tickets : []).find((x) => x.id === meta?.ticketId);
+    const qty = Math.floor(Number(meta?.qty) || 0);
+    if (!tdef || qty < 1 || subtotal !== (Number(tdef.price) || 0) * qty + bottlesTotal) {
+      return Response.json({ ok: false, error: 'Ticket price mismatch — please refresh and try again' }, { status: 400 });
+    }
+  }
+
   // restaurant reservations: the deposit is priced on the server, never trusted from the browser
   if (kind === 'booking_host' && meta?.slotTime) {
     const party = Math.floor(Number(meta.party) || 0);

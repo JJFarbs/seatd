@@ -46,6 +46,7 @@ export async function POST(req) {
         paid_now: m.myShare, min_spend: m.min, status: 'pending', deadline_ms: Date.now() + 20 * 60 * 1000,
         code, who: m.who, t_label: 'just now', split_pay: !!m.splitPay, invited: m.invited || [],
         promo: m.promo, date_label: todayStr(), payments: m.payments || [], user_id: user.id, paystack_ref: reference,
+        bottles: m.bottles || [],
         ...(m.slotTime ? { slot_date: m.slotDate, slot_time: m.slotTime, party: m.party } : {}),
       };
       if (!m.slotTime) { // club table: stamp the venue's current event date so it can move to Previous bookings after the night
@@ -71,7 +72,7 @@ export async function POST(req) {
         id, venue_id: pending.venue_id, venue_name: m.venueName, ticket_id: m.ticketId, ticket_name: m.ticketName,
         price: m.price, qty: m.qty, subtotal: pending.subtotal, service_fee: pending.fee, total: pending.amount,
         status: 'confirmed', code, user_id: user.id, name: m.name, date_label: todayStr(), paystack_ref: reference,
-        event_date: tdef?.date || null,
+        event_date: tdef?.date || null, bottles: m.bottles || [],
       };
       const { error } = await client.from('ticket_purchases').insert(row);
       if (error) throw error;
