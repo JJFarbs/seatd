@@ -598,7 +598,7 @@ details.faq{background:linear-gradient(180deg,rgba(30,23,41,.5),rgba(15,11,21,.9
 .marquee{
   overflow:hidden;margin:18px calc(-1 * clamp(16px,3vw,42px)) 2px;padding:11px 0;
   border-top:1px solid rgba(200,255,61,.25);border-bottom:1px solid rgba(200,255,61,.25);
-  background:rgba(200,255,61,.05);transform:rotate(-1.4deg) scale(1.02);
+  background:rgba(200,255,61,.05);transform:none;
 }
 .marquee-track{
   display:inline-flex;white-space:nowrap;will-change:transform;
