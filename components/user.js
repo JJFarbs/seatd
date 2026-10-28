@@ -300,7 +300,6 @@ export function Discover() {
   const res = searchClubs(list, s.clubSearch);
   list = res.hits;
   if (s.nearMe) list = [...list].sort((a, b) => a.dist - b.dist);
-  const pts = openPublicTables().filter((pt) => s.area === 'All' || (venue(pt.vid) && venue(pt.vid).area === s.area));
   return (
     <>
       <OfflineBar />
@@ -346,12 +345,6 @@ export function Discover() {
             {s.showFavs ? 'Show all venues' : `Favourites (${s.favs.length})`}
           </button>
         </div>
-        {pts.length > 0 && (
-          <>
-            <div className="eyebrow" style={{ marginTop: 20, color: 'var(--teal)' }}>Join an open table</div>
-            {pts.map((pt) => <PublicTableCard pt={pt} mode="join" key={pt.id} />)}
-          </>
-        )}
         <div className="eyebrow" style={{ marginTop: 20 }}>{s.showFavs ? 'Your favourites' : 'Book your own table'}</div>
         {res.fuzzy && list.length > 0 && <div className="meta2" style={{ marginTop: 14 }}>No exact match for “{s.clubSearch}” — showing the closest matches:</div>}
         <div className="cards stagger">
@@ -1024,10 +1017,6 @@ export function MyBookings() {
   const mine = s.requests.filter((r) =>
     !isPastItem(r) && (uid ? (r.userId === uid || (r.payments || []).some((p) => p.id === uid))
       : !s.dbReady && (r.who === 'You' || (r.payments || []).some((p) => p.id === 'host' && p.name === people.me.name))));
-  // tables you've paid to join
-  const myJoins = uid
-    ? s.publicTables.flatMap((pt) => (pt.joinRequests || []).filter((j) => j.userId === uid && j.status !== 'denied').map((j) => ({ pt, j })))
-    : [];
   const myTickets = uid ? s.ticketPurchases.filter((p) => p.userId === uid && p.status !== 'refunded' && !isPastItem(p)) : [];
   return (
     <>
@@ -1035,26 +1024,6 @@ export function MyBookings() {
       <div className="body enter"><div className="pad">
         <div className="h1" style={{ fontSize: 28 }}>My<br />bookings</div>
         <div className="sub" style={{ marginTop: 6 }}>Track your table, who has paid, countdowns, and booking references.</div>
-        {myJoins.length > 0 && (
-          <div className="stagger" style={{ marginTop: 16 }}>
-            {myJoins.map(({ pt, j }) => (
-              <div className="req" key={j.id}>
-                <div className="row">
-                  <div>
-                    <div className="nm" style={{ fontSize: 17, fontWeight: 800 }}>{pt.venue} — {pt.table}</div>
-                    <div className="meta2">Joined table · hosted by {pt.owner} · {fmt(j.amount)} paid</div>
-                  </div>
-                  {j.status === 'approved'
-                    ? <StatusChip st="confirmed" />
-                    : <span className="badge" style={{ background: 'rgba(255,194,75,.15)', color: 'var(--gold)' }}>WAITING FOR HOST</span>}
-                </div>
-                {j.status === 'approved' && (
-                  <button className="btn sm" style={{ marginTop: 14 }} onClick={() => mutate((x) => { x.activeJoinPass = { ptId: pt.id, jrId: j.id }; x.screen = 'joinpass'; })}>Open pass</button>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
         {myTickets.length > 0 && (
           <div className="stagger" style={{ marginTop: 16 }}>
             {myTickets.map((p) => (
@@ -1074,7 +1043,6 @@ export function MyBookings() {
         <div className="stagger" style={{ marginTop: 16 }}>
           {mine.length ? mine.map((r) => {
             const confirmed = r.status === 'confirmed' || r.status === 'checkedin';
-            const pt = publicTableForBooking(r.id);
             return (
               <div className="req" key={r.id}>
                 <div className="row">
@@ -1091,20 +1059,9 @@ export function MyBookings() {
                   <div className="li"><span>Group total</span><b>{fmt(r.total)}</b></div>
                   <div className="li"><span>Paid participants</span><b>{paidCount(r)}</b></div>
                   <div className="li"><span>Outstanding</span><b>{fmt(amountOutstanding(r))}</b></div>
-                  <div className="li"><span>Recovered from public joiners</span><b>{fmt(tableCostRecovered(r))}</b></div>
                 </div>
                 <PaymentRows r={r} editable={r.status === 'pending'} />
                 {confirmed && <ShareBlock r={r} />}
-                {confirmed && (pt ? <PublicTableCard pt={pt} mode="owner" /> : (
-                  <div className="publiccard">
-                    <div className="row"><div>
-                      <div className="eyebrow" style={{ color: 'var(--teal)' }}>Public table</div>
-                      <div style={{ fontWeight: 800, fontSize: 16 }}>Open this table to other users?</div>
-                      <div className="meta2">Set a join price. Approved joiners reduce the original group&apos;s effective cost.</div>
-                    </div></div>
-                    <button className="btn sm" style={{ marginTop: 13 }} onClick={() => makePublic(r.id)}>Make table public</button>
-                  </div>
-                ))}
                 <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
                   <button className={`btn sm ${confirmed ? '' : 'ghost'}`} style={{ flex: 1 }} onClick={() => mutate((x) => { x.activeReq = r.id; x.screen = 'status'; })}>
                     {confirmed ? 'Open pass' : 'Track booking'}
@@ -1112,7 +1069,7 @@ export function MyBookings() {
                 </div>
               </div>
             );
-          }) : (myJoins.length ? null : <Empty>No bookings yet.<br />Book a table and it will appear here with payment tracking and your reference.</Empty>)}
+          }) : (<Empty>No bookings yet.<br />Book a table and it will appear here with payment tracking and your reference.</Empty>)}
         </div>
       </div></div>
       <UserTabbar />

@@ -2,13 +2,13 @@
 import { useEffect } from 'react';
 import { useApp, mutate, setRole, refreshExpiries, hydrateFromDb, initAuth, pollLive, captureDeepLink } from '@/lib/store';
 import { AuthView } from '@/components/auth';
-import { Discover, MapScreen, VenueScreen, BookingScreen, PayScreen, JoinPayScreen, StatusScreen, MyBookings, JoinedPassScreen, TicketPayScreen, TicketPassScreen } from '@/components/user';
+import { Discover, MapScreen, VenueScreen, BookingScreen, PayScreen, StatusScreen, MyBookings, TicketPayScreen, TicketPassScreen } from '@/components/user';
 import { MessagesHome, FriendsScreen, FriendProfile, ChatScreen, GroupChatScreen } from '@/components/social';
 import { ProfileScreen, EditProfile, PreviousBookings, NotifScreen, LegalScreen, NotFound } from '@/components/profile';
 import { ClubView } from '@/components/club';
 import { AdminView } from '@/components/admin';
 
-const USER_SCREENS = ['home', 'venue', 'booking', 'pay', 'joinpay', 'joinpass', 'ticketpay', 'ticketpass', 'status', 'editprofile', 'previous', 'notifs', 'legal', 'chat', 'groupchat', 'friends', 'friendprofile', 'signup'];
+const USER_SCREENS = ['home', 'venue', 'booking', 'pay', 'ticketpay', 'ticketpass', 'status', 'editprofile', 'previous', 'notifs', 'legal', 'chat', 'groupchat', 'friends', 'friendprofile', 'signup'];
 
 function Skeleton() {
   return (
@@ -37,8 +37,6 @@ function Screen() {
   if (s.screen === 'venue') return <VenueScreen />;
   if (s.screen === 'booking') return <BookingScreen />;
   if (s.screen === 'pay') return <PayScreen />;
-  if (s.screen === 'joinpay') return <JoinPayScreen />;
-  if (s.screen === 'joinpass') return <JoinedPassScreen />;
   if (s.screen === 'ticketpay') return <TicketPayScreen />;
   if (s.screen === 'ticketpass') return <TicketPassScreen />;
   if (s.screen === 'status') return <StatusScreen />;
