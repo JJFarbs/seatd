@@ -267,7 +267,7 @@ export function ShareBlock({ r }) {
 function ClubCard({ v }) {
   const s = useApp();
   return (
-    <div className="card" onClick={() => mutate((x) => { x.venueId = v.id; x.selTable = null; x.selSlot = null; if (x.women === 0) x.women = 1; x.venueTab = 'tables'; x.screen = 'venue'; })}>
+    <div className="card" onClick={() => mutate((x) => { x.venueId = v.id; x.selTable = null; x.selSlot = null; x.venueTab = 'tables'; x.screen = 'venue'; })}>
       <div className="cover" style={{ height: 180 }}>
         <Cover v={v} h={180} />
         <span className="genrebdg">{v.genre}</span><span className="when">{v.when}</span>
@@ -315,7 +315,7 @@ export function Discover() {
         {(() => {
           const live = venues.filter((v) => v.status === 'live');
           if (!live.length) return null;
-          const openVenue = (id) => mutate((x) => { x.venueId = id; x.selTable = null; x.selSlot = null; if (x.women === 0) x.women = 1; x.venueTab = 'tables'; x.screen = 'venue'; });
+          const openVenue = (id) => mutate((x) => { x.venueId = id; x.selTable = null; x.selSlot = null; x.venueTab = 'tables'; x.screen = 'venue'; });
           const run = (key) => (
             <span className="marq-run" key={key}>
               {live.map((v) => (
@@ -368,7 +368,7 @@ export function Discover() {
 export function MapScreen() {
   useApp();
   const live = venues.filter((v) => v.status === 'live');
-  const openVenue = (id) => mutate((x) => { x.venueId = id; x.selTable = null; x.selSlot = null; if (x.women === 0) x.women = 1; x.venueTab = 'tables'; x.screen = 'venue'; });
+  const openVenue = (id) => mutate((x) => { x.venueId = id; x.selTable = null; x.selSlot = null; x.venueTab = 'tables'; x.screen = 'venue'; });
   const mapEl = useRef(null);
   const mapObj = useRef(null);
   useEffect(() => {
@@ -713,11 +713,10 @@ export function BookingScreen() {
   const t = rest ? slotTable(v) : tablesFor(s.venueId).find((x) => x.id === s.selTable);
   if (!t || !v) return null;
   const m = bookingMath(t);
-  const partySize = rest ? t.party : s.men + s.women, overLimit = partySize > t.seats;
-  const step = (k, d) => mutate((x) => {
-    const nv = x[k] + d;
-    const total = k === 'men' ? nv + x.women : nv + x.men;
-    if (nv >= 0 && total >= 1 && total <= t.seats) x[k] = nv;
+  const partySize = rest ? t.party : s.men, overLimit = partySize > t.seats;
+  const step = (d) => mutate((x) => {
+    const nv = x.men + d;
+    if (nv >= 1 && nv <= t.seats) { x.men = nv; x.women = 0; }
   });
   return (
     <>
@@ -728,18 +727,16 @@ export function BookingScreen() {
       <div className="body enter"><div className="pad" style={{ paddingBottom: 130 }}>
         <div className="eyebrow">Your party</div>
         {rest && <div className="meta2" style={{ marginTop: 10 }}>{t.party} guest{t.party === 1 ? '' : 's'} · {t.id}. Go back to change the day, time or party size.</div>}
-        <div className="splitrow" style={{ marginTop: 12, display: rest ? 'none' : undefined }}>
-          {[['men', 'Guys'], ['women', 'Girls']].map(([k, label]) => (
-            <div className="col" key={k}>
-              <div className="sub" style={{ fontSize: 12, marginBottom: 10 }}>{label}</div>
-              <div className="stepper">
-                <button aria-label={`Remove ${label}`} onClick={() => step(k, -1)}>−</button>
-                <span className="val">{s[k]}</span>
-                <button aria-label={`Add ${label}`} onClick={() => step(k, 1)}>+</button>
-              </div>
+        {!rest && (
+          <div style={{ marginTop: 12 }}>
+            <div className="sub" style={{ fontSize: 12, marginBottom: 10 }}>Guests (max {t.seats})</div>
+            <div className="stepper">
+              <button aria-label="Fewer guests" onClick={() => step(-1)}>−</button>
+              <span className="val">{s.men}</span>
+              <button aria-label="More guests" onClick={() => step(1)}>+</button>
             </div>
-          ))}
-        </div>
+          </div>
+        )}
         <div className="field" style={{ maxWidth: 680 }}>
           <label>Invite crew / split payment</label>
           <div className="chips" style={{ paddingTop: 0 }}>
@@ -778,7 +775,7 @@ export function BookingScreen() {
         </div>}
         <div className="summary">
           {rest ? <div className="li"><span>Party</span><b>{t.party} guest{t.party === 1 ? '' : 's'}</b></div>
-            : <div className="li"><span>Party composition</span><b>{s.men} guys / {s.women} girls</b></div>}
+            : <div className="li"><span>Guests</span><b>{s.men}</b></div>}
           {!rest && <div className="li"><span>Seats used</span><b style={{ color: overLimit ? 'var(--warn)' : 'var(--txt)' }}>{partySize}/{t.seats}</b></div>}
           <div className="li"><span>{rest ? 'Booking deposit' : 'Table minimum spend'}</span><b>{fmt(t.min)}</b></div>
           {!t.feeFree && <div className="li"><span>Seat&apos;d service charge (5%)</span><b>{fmt(m.fee)}</b></div>}
@@ -808,7 +805,7 @@ export function PayScreen() {
     const feeOverride = m.myShare - mySubtotal;
     startPaystackPayment('booking_host', v.id, mySubtotal, feeOverride, {
       ...(t.slot ? { slotDate: s.selSlot.date, slotTime: s.selSlot.time, party: t.party } : {}),
-      venueName: v.name, tableId: t.id, tier: t.tier, men: t.slot ? t.party : s.men, women: t.slot ? 0 : s.women, min: t.min,
+      venueName: v.name, tableId: t.id, tier: t.tier, men: t.slot ? t.party : s.men, women: 0, min: t.min,
       myShare: m.myShare, splitPay: s.splitPay, invited: s.splitPay ? s.invited.slice() : [],
       promo: s.promoterCode, who: people.me.name || 'You', payments: splitPaymentsFor(t),
     });

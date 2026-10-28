@@ -122,7 +122,7 @@ function ClubRequests() {
                   </span>
                 </div>
                 <Deadline r={r} who="club" />
-                <div className="sub" style={{ fontSize: 14, marginTop: 12, color: 'var(--txt)' }}>{r.slotTime ? 'Reservation' : tierMeta[r.tier].label} <b>{r.table}</b> — {r.slotTime ? `${r.party || r.men} guests` : `${r.men} guys + ${r.women} girls`}</div>
+                <div className="sub" style={{ fontSize: 14, marginTop: 12, color: 'var(--txt)' }}>{r.slotTime ? 'Reservation' : tierMeta[r.tier].label} <b>{r.table}</b> — {r.slotTime ? `${r.party || r.men} guests` : `${(r.men || 0) + (r.women || 0)} guests`}</div>
                 <div className="sub" style={{ fontSize: 13, marginTop: 4 }}>Total booking <b style={{ color: 'var(--txt)' }}>{fmt(r.total)}</b> · outstanding {fmt(amountOutstanding(r))}</div>
                 <div className="sub" style={{ fontSize: 12, marginTop: 4 }}>{r.splitPay ? 'Split-pay active' : 'Paid by host'} · {paidCount(r)} paid · promoter {r.promo || '—'}</div>
                 <PaymentRows r={r} editable={false} />
