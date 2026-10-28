@@ -676,3 +676,10 @@ details.faq{background:linear-gradient(180deg,rgba(30,23,41,.5),rgba(15,11,21,.9
 .kindseg{display:flex;gap:4px;padding:4px;margin-top:14px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);}
 .kindseg button{flex:1;border:0;background:transparent;color:var(--muted);font-family:var(--body);font-weight:700;font-size:14px;padding:11px 8px;min-height:44px;border-radius:999px;cursor:pointer;transition:.2s;}
 .kindseg button.on{background:var(--lime);color:#0B0710;}
+
+/* ---- restaurant time slots ---- */
+.slotgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px;margin-top:10px;max-width:640px;}
+.slotbtn{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 6px;min-height:56px;border-radius:14px;border:1px solid var(--line);background:var(--surface-2);color:var(--txt);font-family:var(--body);cursor:pointer;transition:.18s;}
+.slotbtn b{font-size:16px;font-weight:800;} .slotbtn span{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+.slotbtn.on{background:var(--lime);border-color:var(--lime);color:#0B0710;} .slotbtn.on span{color:#0B0710;}
+.slotbtn:disabled{opacity:.38;cursor:not-allowed;}

@@ -46,6 +46,7 @@ export async function POST(req) {
         paid_now: m.myShare, min_spend: m.min, status: 'pending', deadline_ms: Date.now() + 20 * 60 * 1000,
         code, who: m.who, t_label: 'just now', split_pay: !!m.splitPay, invited: m.invited || [],
         promo: m.promo, date_label: todayStr(), payments: m.payments || [], user_id: user.id, paystack_ref: reference,
+        ...(m.slotTime ? { slot_date: m.slotDate, slot_time: m.slotTime, party: m.party } : {}),
       };
       const { error } = await client.from('bookings').insert(row);
       if (error) throw error;

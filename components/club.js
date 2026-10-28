@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Chart as ChartJS, registerables } from 'chart.js';
 import { Bar, Line } from 'react-chartjs-2';
-import { AREAS, tierMeta, fmt, serviceFee } from '@/lib/data';
+import { AREAS, ALL_SLOTS, DEFAULT_SLOTS, tierMeta, fmt, serviceFee, slotDay } from '@/lib/data';
 import {
   useApp, mutate, venues, venue, clubVenue, tablesFor, allPaid, paidCount,
   amountOutstanding, decide, scanNext, toast, syncVenueToDb, saveVenueLayout,
@@ -122,7 +122,7 @@ function ClubRequests() {
                   </span>
                 </div>
                 <Deadline r={r} who="club" />
-                <div className="sub" style={{ fontSize: 14, marginTop: 12, color: 'var(--txt)' }}>{tierMeta[r.tier].label} <b>{r.table}</b> — {r.men} guys + {r.women} girls</div>
+                <div className="sub" style={{ fontSize: 14, marginTop: 12, color: 'var(--txt)' }}>{r.slotTime ? 'Reservation' : tierMeta[r.tier].label} <b>{r.table}</b> — {r.slotTime ? `${r.party || r.men} guests` : `${r.men} guys + ${r.women} girls`}</div>
                 <div className="sub" style={{ fontSize: 13, marginTop: 4 }}>Total booking <b style={{ color: 'var(--txt)' }}>{fmt(r.total)}</b> · outstanding {fmt(amountOutstanding(r))}</div>
                 <div className="sub" style={{ fontSize: 12, marginTop: 4 }}>{r.splitPay ? 'Split-pay active' : 'Paid by host'} · {paidCount(r)} paid · promoter {r.promo || '—'}</div>
                 <PaymentRows r={r} editable={false} />
@@ -193,13 +193,30 @@ function ClubManage() {
             toast('Venue published');
           }}>Save &amp; publish</button>
         </div>
-        <div className="featuregrid">
-          <div className="featurecard"><div className="n">{booked}/{ts.length}</div><div className="l">Tables occupied</div></div>
-          <div className="featurecard"><div className="n">{Math.round((booked / ts.length) * 100)}%</div><div className="l">Floor usage</div></div>
-          <div className="featurecard"><div className="n">{v.capacity || '—'}</div><div className="l">Capacity</div></div>
-          <div className="featurecard"><div className="n">22:00</div><div className="l">Doors open</div></div>
-        </div>
-        <TableLayoutEditor v={v} />
+        {v.kind === 'restaurant' ? (() => {
+          const today = new Date().toISOString().slice(0, 10);
+          const mine = s.requests.filter((r) => r.vid === v.id && r.slotDate && ['pending', 'confirmed', 'checkedin'].includes(r.status));
+          const todays = mine.filter((r) => r.slotDate === today);
+          const covers = todays.reduce((a, r) => a + (r.party || 0), 0);
+          const upcoming = mine.filter((r) => r.slotDate >= today).length;
+          return (
+            <div className="featuregrid">
+              <div className="featurecard"><div className="n">{todays.length}</div><div className="l">Reservations today</div></div>
+              <div className="featurecard"><div className="n">{covers}</div><div className="l">Covers today</div></div>
+              <div className="featurecard"><div className="n">{upcoming}</div><div className="l">Upcoming bookings</div></div>
+              <div className="featurecard"><div className="n">{v.slotCovers || 40}</div><div className="l">Covers per time slot</div></div>
+            </div>
+          );
+        })() : (
+          <div className="featuregrid">
+            <div className="featurecard"><div className="n">{booked}/{ts.length}</div><div className="l">Tables occupied</div></div>
+            <div className="featurecard"><div className="n">{ts.length ? Math.round((booked / ts.length) * 100) : 0}%</div><div className="l">Floor usage</div></div>
+            <div className="featurecard"><div className="n">{v.capacity || '—'}</div><div className="l">Capacity</div></div>
+            <div className="featurecard"><div className="n">22:00</div><div className="l">Doors open</div></div>
+          </div>
+        )}
+        {v.kind === 'restaurant' ? <ReservationSettings v={v} /> : <TableLayoutEditor v={v} />}
+        <FeeSettings v={v} />
         <TicketEditor v={v} />
         <MenuEditor v={v} />
         <LocationPicker v={v} />
@@ -430,11 +447,64 @@ function TicketEditor({ v }) {
   );
 }
 
-// Bottle/drink menu editor — shown to guests under the club's Info tab.
+// Restaurants: seating times, party size limit, covers per slot and the booking deposit.
+function ReservationSettings({ v }) {
+  useApp();
+  const slots = v.slots && v.slots.length ? v.slots : DEFAULT_SLOTS;
+  const num = (raw) => { const n = parseInt(String(raw).replace(/\D/g, ''), 10); return isNaN(n) ? 0 : n; };
+  const toggle = (t) => mutate(() => {
+    const cur = new Set(slots);
+    if (cur.has(t)) cur.delete(t); else cur.add(t);
+    v.slots = ALL_SLOTS.filter((x) => cur.has(x));
+  });
+  return (
+    <div className="summary" style={{ maxWidth: 780 }}>
+      <div className="eyebrow">Reservations</div>
+      <div className="meta2" style={{ marginTop: 4 }}>Guests pick a day, party size and one of your seating times. A deposit holds the table and is credited to their bill.</div>
+      <div className="field" style={{ marginTop: 14 }}><label>Seating times (tap to switch on / off)</label>
+        <div className="chips" style={{ paddingTop: 0 }}>
+          {ALL_SLOTS.map((t) => <div key={t} className={`chip ${slots.includes(t) ? 'on' : ''}`} onClick={() => toggle(t)}>{t}</div>)}
+        </div>
+      </div>
+      <div className="field"><label>Deposit type</label>
+        <div className="chips" style={{ paddingTop: 0 }}>
+          {[['person', 'Per person'], ['booking', 'Per booking']].map(([k, l]) => <div key={k} className={`chip ${v.depositMode === k ? 'on' : ''}`} onClick={() => mutate(() => { v.depositMode = k; })}>{l}</div>)}
+        </div>
+      </div>
+      {[['depositPP', v.depositMode === 'booking' ? 'Deposit per booking (R)' : 'Deposit per person (R)'], ['slotCovers', 'Max guests per seating time'], ['maxParty', 'Largest party bookable online']].map(([k, label]) => (
+        <div className="field" key={k}><label>{label}</label>
+          <input className="input" inputMode="numeric" value={v[k]} onChange={(e) => mutate(() => { v[k] = num(e.target.value); })} style={{ maxWidth: 200 }} />
+        </div>
+      ))}
+      <button className="btn sm" style={{ marginTop: 6 }} onClick={() => {
+        mutate(() => { if (!(v.depositPP >= 0)) v.depositPP = 0; if (!(v.slotCovers > 0)) v.slotCovers = 40; if (!(v.maxParty > 0)) v.maxParty = 10; if (!v.slots || !v.slots.length) v.slots = DEFAULT_SLOTS; });
+        syncVenueToDb(v); toast('Reservation settings saved');
+      }}>Save reservation settings</button>
+    </div>
+  );
+}
+
+// Who pays Seat'd's 5% service charge: the guest (added at checkout) or the venue (taken out of the payout).
+function FeeSettings({ v }) {
+  useApp();
+  return (
+    <div className="summary" style={{ maxWidth: 780 }}>
+      <div className="eyebrow">Who pays the Seat&apos;d fee?</div>
+      <div className="meta2" style={{ marginTop: 4 }}>Seat&apos;d charges 5% on every booking and ticket. Either guests see it added at checkout, or you absorb it and guests pay exactly your price.</div>
+      <div className="chips" style={{ paddingTop: 12 }}>
+        {[['guest', 'Guest pays (default)'], ['venue', 'I pay it']].map(([k, l]) => <div key={k} className={`chip ${(v.feePayer || 'guest') === k ? 'on' : ''}`} onClick={() => mutate(() => { v.feePayer = k; })}>{l}</div>)}
+      </div>
+      <button className="btn sm" style={{ marginTop: 12 }} onClick={() => { syncVenueToDb(v); toast('Fee setting saved'); }}>Save</button>
+    </div>
+  );
+}
+
+// Bottle/drink menu editor — shown to guests under the club's Info tab. Restaurants get food sections.
 function MenuEditor({ v }) {
   useApp();
+  const rest = v.kind === 'restaurant';
   const items = v.menu || [];
-  const add = () => mutate(() => { v.menu = [...(v.menu || []), ['New item', 100]]; });
+  const add = () => mutate(() => { v.menu = [...(v.menu || []), rest ? ['New dish', 100, (v.menu || []).length ? ((v.menu || [])[(v.menu || []).length - 1][2] || 'Mains') : 'Mains'] : ['New item', 100]]; });
   const remove = (i) => mutate(() => { v.menu = (v.menu || []).filter((_, idx) => idx !== i); });
   const setField = (i, key) => (e) => {
     const raw = e.target.value;
@@ -442,6 +512,7 @@ function MenuEditor({ v }) {
       const arr = [...(v.menu || [])];
       const item = [...arr[i]];
       if (key === 'name') item[0] = raw;
+      else if (key === 'section') item[2] = raw;
       else { const val = parseInt(String(raw).replace(/\D/g, ''), 10); item[1] = isNaN(val) ? 0 : val; }
       arr[i] = item;
       v.menu = arr;
@@ -450,12 +521,13 @@ function MenuEditor({ v }) {
   return (
     <div className="summary" style={{ maxWidth: 780 }}>
       <div className="row">
-        <div><div className="eyebrow">Bottle menu</div><div className="meta2" style={{ marginTop: 4 }}>Shown to guests under Club info — add your bottles/drinks and prices.</div></div>
+        <div><div className="eyebrow">{rest ? 'Food & drinks menu' : 'Bottle menu'}</div><div className="meta2" style={{ marginTop: 4 }}>{rest ? 'Shown to guests under Info & menu — group dishes into sections like Starters, Mains, Desserts, Drinks.' : 'Shown to guests under Club info — add your bottles/drinks and prices.'}</div></div>
       </div>
       {items.map((m, i) => (
         <div className="minirow" key={i} style={{ flexWrap: 'wrap', gap: 8 }}>
           <input className="input" value={m[0]} onChange={setField(i, 'name')} style={{ flex: '1 1 160px', minHeight: 38, padding: '6px 10px' }} />
           <span style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            {rest && <input className="input" placeholder="Section" value={m[2] || ''} onChange={setField(i, 'section')} style={{ width: 120, minHeight: 38, padding: '6px 10px' }} />}
             <label className="meta2" style={{ fontSize: 11 }}>Price R</label>
             <input className="input" inputMode="numeric" value={m[1]} onChange={setField(i, 'price')} style={{ width: 84, minHeight: 38, padding: '6px 10px' }} />
             <button className="btn sm ghost" style={{ width: 'auto', padding: '6px 10px', minHeight: 38 }} onClick={() => remove(i)}>Remove</button>
@@ -464,7 +536,7 @@ function MenuEditor({ v }) {
       ))}
       {!items.length && <div className="meta2" style={{ marginTop: 8 }}>No menu items yet — add one below.</div>}
       <div className="wideactions" style={{ marginTop: 12 }}>
-        <button className="btn sm ghost" onClick={add}>+ Menu item</button>
+        <button className="btn sm ghost" onClick={add}>{rest ? '+ Dish' : '+ Menu item'}</button>
       </div>
       <button className="btn sm" style={{ marginTop: 12 }} onClick={() => saveVenueMenu(v, v.menu || [])}>Save menu</button>
     </div>
@@ -576,7 +648,7 @@ function ClubInsights() {
   const ticketSales = s.ticketPurchases.filter((p) => p.vid === v.id && p.status !== 'refunded');
   const ticketRevenue = ticketSales.reduce((a, p) => a + (Number(p.total) || 0), 0);
   const revenue = confirmed.reduce((a, r) => a + (Number(r.total) || 0), 0);
-  const service = confirmed.reduce((a, r) => a + (Number(r.serviceFee) || serviceFee(r.subtotal || r.min || 0)), 0);
+  const service = confirmed.reduce((a, r) => a + ((r.serviceFee != null ? Number(r.serviceFee) : serviceFee(r.subtotal || r.min || 0))), 0);
   const guests = confirmed.reduce((a, r) => a + (r.men || 0) + (r.women || 0), 0);
   const avgSpend = confirmed.length ? Math.round(revenue / confirmed.length) : 0;
   const ts = tablesFor(v.id);

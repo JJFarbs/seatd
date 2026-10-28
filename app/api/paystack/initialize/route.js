@@ -23,7 +23,7 @@ export async function POST(req) {
     return Response.json({ ok: false, error: 'Missing required fields' }, { status: 400 });
   }
 
-  const { data: venue } = await db.from('venues').select('id,name,paystack_subaccount_code,payout_status').eq('id', venueId).single();
+  const { data: venue } = await db.from('venues').select('id,name,paystack_subaccount_code,payout_status,kind,deposit_pp,deposit_mode,fee_payer,slot_covers,max_party').eq('id', venueId).single();
   if (!venue) return Response.json({ ok: false, error: 'Venue not found' }, { status: 404 });
   if (venue.payout_status !== 'active' || !venue.paystack_subaccount_code) {
     return Response.json({ ok: false, error: 'venue_not_ready', message: `${venue.name} hasn't finished payment setup yet` }, { status: 409 });
@@ -33,7 +33,31 @@ export async function POST(req) {
   // split-pay shares (booking_host / booking_share) already have the fee baked into
   // a pre-computed share amount shown to the guest, so the client passes the exact
   // fee portion of that share to keep the charge byte-for-byte what was displayed.
-  const fee = typeof feeOverride === 'number' ? feeOverride : serviceFee(subtotal);
+  // restaurant reservations: the deposit is priced on the server, never trusted from the browser
+  if (kind === 'booking_host' && meta?.slotTime) {
+    const party = Math.floor(Number(meta.party) || 0);
+    if (venue.kind !== 'restaurant' || party < 1 || party > (venue.max_party || 10)) {
+      return Response.json({ ok: false, error: 'Invalid reservation' }, { status: 400 });
+    }
+    const groupTotal = venue.deposit_mode === 'booking' ? venue.deposit_pp : venue.deposit_pp * party;
+    const sharers = 1 + (meta.splitPay ? (meta.invited || []).length : 0);
+    const minShare = Math.floor(groupTotal / sharers) - 1;
+    const maxShare = Math.ceil(groupTotal / sharers) + 1;
+    if (subtotal < minShare || subtotal > maxShare) {
+      return Response.json({ ok: false, error: 'Deposit mismatch — please refresh and try again' }, { status: 400 });
+    }
+    const { data: taken } = await client.from('bookings').select('party,men,women')
+      .eq('venue_id', venueId).eq('slot_date', meta.slotDate).eq('slot_time', meta.slotTime).in('status', ['pending', 'confirmed', 'checkedin']);
+    const used = (taken || []).reduce((a, r) => a + (r.party || (r.men || 0) + (r.women || 0)), 0);
+    if (used + party > (venue.slot_covers || 40)) {
+      return Response.json({ ok: false, error: 'slot_full', message: 'That time just filled up — pick another slot' }, { status: 409 });
+    }
+  }
+
+  // who pays Seat'd's 5%: the guest (added on top) or the venue (deducted from its payout)
+  const venuePays = venue.fee_payer === 'venue';
+  const platformFee = venuePays ? serviceFee(subtotal) : null;
+  const fee = venuePays ? 0 : (typeof feeOverride === 'number' ? feeOverride : serviceFee(subtotal));
   const amount = subtotal + fee;
   const reference = 'SEATD-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2, 8).toUpperCase();
 
@@ -47,7 +71,7 @@ export async function POST(req) {
     const tx = await initializeTransaction({
       email: user.email,
       amount,
-      platformFee: fee,
+      platformFee: platformFee ?? fee,
       subaccountCode: venue.paystack_subaccount_code,
       reference,
       metadata: { kind, venueId, userId: user.id },

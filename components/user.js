@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
-import { AREAS, GENRES, CUISINES, tierMeta, fmt, serviceFee, searchClubs, todayStr } from '@/lib/data';
+import { AREAS, GENRES, CUISINES, tierMeta, fmt, serviceFee, guestFee, slotDay, nextDays, searchClubs, todayStr } from '@/lib/data';
 import {
   S, useApp, mutate, venues, people, venue, tablesFor, bookingMath, splitPaymentsFor, paidCount,
   amountOutstanding, allPaid, adjustedShareAmount, tableCostRecovered, publicTableForBooking,
@@ -9,8 +9,7 @@ import {
   bookingLink, qrPayload, toggleFav, submitReview, addFriendFromDraft, sendBookingInvite,
   makePublic, savePublicPrice, requestJoinPublic, decideJoin,
   markPaid, nativeShare, copyText, addFriend, searchProfiles,
-  ticketsFor, ticketQrPayload, startPaystackPayment,
-} from '@/lib/store';
+  ticketsFor, ticketQrPayload, startPaystackPayment, venueSlots, slotCoversLeft, depositFor, slotTable } from '@/lib/store';
 import {
   Icon, Pin, CheckBig, LogoMark, Av, StatusChip, Empty, OfflineBar, Cover, Gallery,
   FavBtn, Stars, StarRating, ReviewRows, Availability, Deadline, Thumb,
@@ -72,7 +71,8 @@ export function PaymentRows({ r, editable }) {
                 onClick={() => {
                   if (p.id !== uid) { markPaid(r, p.id); return; }
                   const splitCount = (r.payments || []).length || 1;
-                  const mySubtotal = Math.round((r.subtotal || 0) / splitCount);
+                  const feeFree = venue(r.vid)?.feePayer === 'venue';
+                  const mySubtotal = feeFree ? p.amount : Math.round((r.subtotal || 0) / splitCount);
                   startPaystackPayment('booking_share', r.vid, mySubtotal, p.amount - mySubtotal, { bookingId: r.id, paymentId: p.id });
                 }}>{p.id === uid ? 'Pay my share' : 'Mark paid'}</button>
             : <span className="badge" style={{ background: p.status === 'paid' ? 'rgba(63,224,160,.15)' : 'rgba(255,194,75,.14)', color: p.status === 'paid' ? 'var(--ok)' : 'var(--gold)' }}>{p.status === 'paid' ? 'PAID' : 'PINGED'}</span>}
@@ -275,7 +275,7 @@ export function ShareBlock({ r }) {
 function ClubCard({ v }) {
   const s = useApp();
   return (
-    <div className="card" onClick={() => mutate((x) => { x.venueId = v.id; x.selTable = null; x.venueTab = 'tables'; x.screen = 'venue'; })}>
+    <div className="card" onClick={() => mutate((x) => { x.venueId = v.id; x.selTable = null; x.selSlot = null; if (x.women === 0) x.women = 1; x.venueTab = 'tables'; x.screen = 'venue'; })}>
       <div className="cover" style={{ height: 180 }}>
         <Cover v={v} h={180} />
         <span className="genrebdg">{v.genre}</span><span className="when">{v.when}</span>
@@ -291,7 +291,7 @@ function ClubCard({ v }) {
             <div className="sub" style={{ fontSize: 13 }}>{v.tagline}</div>
             <div style={{ marginTop: 7 }}><StarRating v={v} /></div>
           </div>
-          <div className="pricefrom" style={{ textAlign: 'right' }}>from<br /><b>{fmt(v.minFrom)}</b></div>
+          <div className="pricefrom" style={{ textAlign: 'right' }}>{v.kind === 'restaurant' ? <>deposit<br /><b>{fmt(v.depositPP)}{v.depositMode === 'booking' ? '' : ' pp'}</b></> : <>from<br /><b>{fmt(v.minFrom)}</b></>}</div>
         </div>
         <Availability id={v.id} />
       </div>
@@ -323,7 +323,7 @@ export function Discover() {
         {(() => {
           const live = venues.filter((v) => v.status === 'live');
           if (!live.length) return null;
-          const openVenue = (id) => mutate((x) => { x.venueId = id; x.selTable = null; x.venueTab = 'tables'; x.screen = 'venue'; });
+          const openVenue = (id) => mutate((x) => { x.venueId = id; x.selTable = null; x.selSlot = null; if (x.women === 0) x.women = 1; x.venueTab = 'tables'; x.screen = 'venue'; });
           const run = (key) => (
             <span className="marq-run" key={key}>
               {live.map((v) => (
@@ -376,7 +376,7 @@ export function Discover() {
 export function MapScreen() {
   useApp();
   const live = venues.filter((v) => v.status === 'live');
-  const openVenue = (id) => mutate((x) => { x.venueId = id; x.selTable = null; x.venueTab = 'tables'; x.screen = 'venue'; });
+  const openVenue = (id) => mutate((x) => { x.venueId = id; x.selTable = null; x.selSlot = null; if (x.women === 0) x.women = 1; x.venueTab = 'tables'; x.screen = 'venue'; });
   const mapEl = useRef(null);
   const mapObj = useRef(null);
   useEffect(() => {
@@ -431,7 +431,7 @@ export function MapScreen() {
               <Thumb v={v} size={44} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div className="nm">{v.name}</div>
-                <div className="meta2">{v.area} · {v.dist} km · from {fmt(v.minFrom)}</div>
+                <div className="meta2">{v.area} · {v.dist} km · {v.kind === 'restaurant' ? `deposit ${fmt(v.depositPP)}${v.depositMode === 'booking' ? '' : ' pp'}` : `from ${fmt(v.minFrom)}`}</div>
               </div>
               <span style={{ color: 'var(--muted)' }}><Icon name="arrow" size={20} stroke={2.5} /></span>
             </div>
@@ -448,9 +448,10 @@ export function VenueScreen() {
   const s = useApp();
   const v = venue(s.venueId);
   if (!v) return null;
-  const tabs = [['tables', 'Tables'], ['tickets', 'Tickets'], ['events', 'Events'], ['info', 'Club info'], ['reviews', 'Reviews']];
+  const rest = v.kind === 'restaurant';
+  const tabs = [['tables', rest ? 'Reserve' : 'Tables'], ['tickets', 'Tickets'], ['events', 'Events'], ['info', rest ? 'Info & menu' : 'Club info'], ['reviews', 'Reviews']];
   const tables = tablesFor(s.venueId);
-  const sel = tables.find((t) => t.id === s.selTable);
+  const sel = rest ? null : tables.find((t) => t.id === s.selTable);
   return (
     <>
       <OfflineBar />
@@ -465,13 +466,14 @@ export function VenueScreen() {
       </div>
       <div className="body"><div className="pad" style={{ paddingBottom: s.venueTab === 'tables' ? 150 : 34 }}>
         <div className="subtabs">{tabs.map(([id, label]) => <div key={id} className={`chip ${s.venueTab === id ? 'on' : ''}`} onClick={() => mutate((x) => { x.venueTab = id; })}>{label}</div>)}</div>
-        {s.venueTab === 'tables' && <FloorMap v={v} tables={tables} />}
+        {s.venueTab === 'tables' && (rest ? <ReserveTab v={v} /> : <FloorMap v={v} tables={tables} />)}
         {s.venueTab === 'tickets' && <TicketsTab v={v} />}
         {s.venueTab === 'events' && <VenueEvents v={v} />}
         {s.venueTab === 'info' && <VenueInfo v={v} />}
         {s.venueTab === 'reviews' && <VenueReviews v={v} />}
       </div></div>
-      {s.venueTab === 'tables' && (sel ? (
+      {s.venueTab === 'tables' && rest && <ReserveBar v={v} />}
+      {s.venueTab === 'tables' && !rest && (sel ? (
         <div className="bookbar"><div style={{ maxWidth: 640, margin: '0 auto' }}>
           <div className="row" style={{ marginBottom: 12 }}>
             <div>
@@ -572,6 +574,70 @@ function TicketRow({ t }) {
     </div>
   );
 }
+function ReserveTab({ v }) {
+  const s = useApp();
+  const days = nextDays(14);
+  const date = s.slotDate && days.includes(s.slotDate) ? s.slotDate : days[0];
+  const party = Math.max(1, s.men);
+  const max = v.maxParty || 10;
+  const slots = venueSlots(v);
+  const deposit = depositFor(v, party);
+  const now = new Date();
+  const nowHM = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+  const isPast = (t) => date === days[0] && t <= nowHM;
+  return (
+    <>
+      <div className="eyebrow" style={{ marginTop: 14 }}>Pick a day</div>
+      <div className="chips" style={{ paddingTop: 8 }}>
+        {days.map((d, i) => <div key={d} className={`chip ${date === d ? 'on' : ''}`}
+          onClick={() => mutate((x) => { x.slotDate = d; if (x.selSlot && x.selSlot.date !== d) x.selSlot = null; })}>{i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : slotDay(d)}</div>)}
+      </div>
+      <div className="eyebrow" style={{ marginTop: 18 }}>Guests</div>
+      <div className="stepper" style={{ marginTop: 10 }}>
+        <button aria-label="Fewer guests" onClick={() => mutate((x) => { x.men = Math.max(1, x.men - 1); x.women = 0; })}>−</button>
+        <span className="val">{party}</span>
+        <button aria-label="More guests" onClick={() => mutate((x) => { x.men = Math.min(max, x.men + 1); x.women = 0; })}>+</button>
+      </div>
+      <div className="meta2" style={{ marginTop: 6 }}>Up to {max} guests online. For bigger groups, contact the restaurant.</div>
+      <div className="eyebrow" style={{ marginTop: 18 }}>Pick a time</div>
+      <div className="slotgrid">
+        {slots.map((t) => {
+          const left = slotCoversLeft(v, date, t);
+          const full = left < party || isPast(t);
+          const on = s.selSlot && s.selSlot.date === date && s.selSlot.time === t;
+          return (
+            <button key={t} disabled={full} className={`slotbtn ${on ? 'on' : ''}`}
+              onClick={() => mutate((x) => { x.selSlot = { date, time: t }; x.slotDate = date; })}>
+              <b>{t}</b><span>{isPast(t) ? 'Passed' : full ? 'Full' : left <= party * 2 ? 'Filling up' : 'Available'}</span>
+            </button>
+          );
+        })}
+      </div>
+      <div className="summary" style={{ maxWidth: 560, marginTop: 18 }}>
+        <div className="li"><span>{v.depositMode === 'booking' ? 'Booking deposit' : `Deposit (${fmt(v.depositPP)} per person)`}</span><b>{fmt(deposit)}</b></div>
+        <div className="micro">The deposit holds your table and is credited against your bill at the restaurant. Refunded in full if the restaurant can&apos;t take your booking.</div>
+      </div>
+    </>
+  );
+}
+function ReserveBar({ v }) {
+  const s = useApp();
+  const sel = s.selSlot;
+  if (!sel) return <div className="bookbar"><div className="sub" style={{ textAlign: 'center', paddingBottom: 6 }}>Choose a day, party size and time</div></div>;
+  const t = slotTable(v);
+  return (
+    <div className="bookbar"><div style={{ maxWidth: 640, margin: '0 auto' }}>
+      <div className="row" style={{ marginBottom: 12 }}>
+        <div>
+          <div style={{ fontWeight: 700, fontSize: 16 }}>{slotDay(sel.date)} · {sel.time}</div>
+          <div className="sub" style={{ fontSize: 13 }}>{t.party} guest{t.party === 1 ? '' : 's'} · deposit {fmt(t.min)}</div>
+        </div>
+        <div className="pill" style={{ background: 'var(--lime)', color: '#0B0710' }}>Selected</div>
+      </div>
+      <button className="btn" onClick={() => mutate((x) => { x.screen = 'booking'; x.friendDraft = ''; })}>Continue to payment</button>
+    </div></div>
+  );
+}
 function VenueEvents({ v }) {
   const evs = v.events || [];
   return (
@@ -588,16 +654,23 @@ function VenueEvents({ v }) {
   );
 }
 function VenueInfo({ v }) {
-  const rows = [[v.kind === 'restaurant' ? 'Cuisine' : 'Music genre', v.genre], ['Dress code', v.dress || '—'], ['Parking', v.parking || '—'], [v.kind === 'restaurant' ? 'Minimum spend per table' : 'Minimum spend', 'From ' + fmt(v.minFrom)], ['Opening times', v.open || '—'], ['VIP contact', v.vip || '—'], ['Capacity', (v.capacity || '—') + ' people']];
+  const rows = [[v.kind === 'restaurant' ? 'Cuisine' : 'Music genre', v.genre], [v.kind === 'restaurant' ? 'Dress code' : 'Dress code', v.dress || '—'], ['Parking', v.parking || '—'], [v.kind === 'restaurant' ? 'Booking deposit' : 'Minimum spend', v.kind === 'restaurant' ? fmt(v.depositPP) + (v.depositMode === 'booking' ? ' per booking' : ' per person') : 'From ' + fmt(v.minFrom)], ['Opening times', v.open || '—'], ['VIP contact', v.vip || '—'], ['Capacity', (v.capacity || '—') + ' people']];
   return (
     <>
       <div className="eyebrow" style={{ marginTop: 14 }}>Gallery</div>
       <Gallery v={v} />
       <div className="eyebrow" style={{ marginTop: 20 }}>The essentials</div>
       <div className="infogrid">{rows.map(([k, val]) => <div className="infocard" key={k}><div className="k">{k}</div><div className="v">{val}</div></div>)}</div>
-      <div className="eyebrow" style={{ marginTop: 20 }}>Bottle menu</div>
+      <div className="eyebrow" style={{ marginTop: 20 }}>{v.kind === 'restaurant' ? 'Menu' : 'Bottle menu'}</div>
       <div className="summary" style={{ marginTop: 10 }}>
-        {(v.menu || []).length ? (v.menu || []).map((m, i) => <div className="minirow" key={i}><span>{m[0]}</span><b>{fmt(m[1])}</b></div>) : <div className="meta2">Menu coming soon.</div>}
+        {!(v.menu || []).length ? <div className="meta2">Menu coming soon.</div>
+          : v.kind === 'restaurant' ? [...new Set((v.menu || []).map((m) => m[2] || 'Menu'))].map((sec) => (
+            <div key={sec}>
+              <div className="eyebrow" style={{ marginTop: 10, color: 'var(--lime)' }}>{sec}</div>
+              {(v.menu || []).filter((m) => (m[2] || 'Menu') === sec).map((m, i) => <div className="minirow" key={i}><span>{m[0]}</span><b>{fmt(m[1])}</b></div>)}
+            </div>
+          ))
+          : (v.menu || []).map((m, i) => <div className="minirow" key={i}><span>{m[0]}</span><b>{fmt(m[1])}</b></div>)}
       </div>
       <div className="eyebrow" style={{ marginTop: 20 }}>Find us</div>
       <div className="mapwrap" style={{ marginTop: 10, height: 150, maxWidth: 780 }}>
@@ -643,11 +716,12 @@ function VenueReviews({ v }) {
 // ---------- booking / pay / join ----------
 export function BookingScreen() {
   const s = useApp();
-  const t = tablesFor(s.venueId).find((x) => x.id === s.selTable);
   const v = venue(s.venueId);
+  const rest = !!v && v.kind === 'restaurant';
+  const t = rest ? slotTable(v) : tablesFor(s.venueId).find((x) => x.id === s.selTable);
   if (!t || !v) return null;
   const m = bookingMath(t);
-  const partySize = s.men + s.women, overLimit = partySize > t.seats;
+  const partySize = rest ? t.party : s.men + s.women, overLimit = partySize > t.seats;
   const step = (k, d) => mutate((x) => {
     const nv = x[k] + d;
     const total = k === 'men' ? nv + x.women : nv + x.men;
@@ -657,11 +731,12 @@ export function BookingScreen() {
     <>
       <div className="topbar">
         <button className="back" aria-label="Back" onClick={() => mutate((x) => { x.screen = 'venue'; })}><Icon name="back" size={22} stroke={2.8} /></button>
-        <div><div className="h2" style={{ fontSize: 20 }}>{tierMeta[t.tier].label} — {t.id}</div><div className="sub" style={{ fontSize: 12 }}>{v.name}</div></div>
+        <div><div className="h2" style={{ fontSize: 20 }}>{rest ? 'Reservation' : `${tierMeta[t.tier].label} — ${t.id}`}</div><div className="sub" style={{ fontSize: 12 }}>{v.name}{rest ? ` · ${t.id}` : ''}</div></div>
       </div>
       <div className="body enter"><div className="pad" style={{ paddingBottom: 130 }}>
         <div className="eyebrow">Your party</div>
-        <div className="splitrow" style={{ marginTop: 12 }}>
+        {rest && <div className="meta2" style={{ marginTop: 10 }}>{t.party} guest{t.party === 1 ? '' : 's'} · {t.id}. Go back to change the day, time or party size.</div>}
+        <div className="splitrow" style={{ marginTop: 12, display: rest ? 'none' : undefined }}>
           {[['men', 'Guys'], ['women', 'Girls']].map(([k, label]) => (
             <div className="col" key={k}>
               <div className="sub" style={{ fontSize: 12, marginBottom: 10 }}>{label}</div>
@@ -701,23 +776,24 @@ export function BookingScreen() {
             <div className={`tog ${s.splitPay ? 'on' : ''}`} role="switch" aria-checked={s.splitPay} onClick={() => mutate((x) => { x.splitPay = !x.splitPay; })}><i /></div>
           </div>
         </div>
-        <div className="promobox">
+        {!rest && <div className="promobox">
           <div className="row">
             <div><div style={{ fontWeight: 800, fontSize: 15 }}>Promoter code</div><div className="meta2">Tracks commission and gives the group priority.</div></div>
             <span className="badge" style={{ background: 'rgba(255,194,75,.18)', color: 'var(--gold)' }}>{s.promoterCode}</span>
           </div>
           <input className="input" style={{ marginTop: 10 }} placeholder="PROMO CODE" value={s.promoterCode}
             onChange={(e) => mutate((x) => { x.promoterCode = e.target.value.toUpperCase(); })} />
-        </div>
+        </div>}
         <div className="summary">
-          <div className="li"><span>Party composition</span><b>{s.men} guys / {s.women} girls</b></div>
-          <div className="li"><span>Seats used</span><b style={{ color: overLimit ? 'var(--warn)' : 'var(--txt)' }}>{partySize}/{t.seats}</b></div>
-          <div className="li"><span>Table minimum spend</span><b>{fmt(t.min)}</b></div>
-          <div className="li"><span>Seat&apos;d service charge (5%)</span><b>{fmt(m.fee)}</b></div>
+          {rest ? <div className="li"><span>Party</span><b>{t.party} guest{t.party === 1 ? '' : 's'}</b></div>
+            : <div className="li"><span>Party composition</span><b>{s.men} guys / {s.women} girls</b></div>}
+          {!rest && <div className="li"><span>Seats used</span><b style={{ color: overLimit ? 'var(--warn)' : 'var(--txt)' }}>{partySize}/{t.seats}</b></div>}
+          <div className="li"><span>{rest ? 'Booking deposit' : 'Table minimum spend'}</span><b>{fmt(t.min)}</b></div>
+          {!t.feeFree && <div className="li"><span>Seat&apos;d service charge (5%)</span><b>{fmt(m.fee)}</b></div>}
           <div className="li"><span>Group payable total</span><b>{fmt(m.chargeTotal)}</b></div>
           <div className="li"><span>Payment pings sent after you pay</span><b>{s.splitPay ? s.invited.length : 0}</b></div>
           <div className="total"><span className="sub">{s.splitPay ? 'Your share today' : 'Total payable now'}</span><span className="amt">{fmt(m.myShare)}</span></div>
-          <div className="micro">Table minimum spend is charged upfront and becomes bar credit. With split-pay you only pay your own share now; friends get their own payment links. Fully refunded if declined.</div>
+          <div className="micro">{rest ? 'Your deposit is credited against your bill at the restaurant. ' : 'Table minimum spend is charged upfront and becomes bar credit. '} With split-pay you only pay your own share now; friends get their own payment links. Fully refunded if declined.</div>
         </div>
       </div></div>
       <div className="bookbar">
@@ -731,15 +807,16 @@ export function BookingScreen() {
 export function PayScreen() {
   const s = useApp();
   const v = venue(s.venueId);
-  const t = tablesFor(s.venueId).find((x) => x.id === s.selTable);
+  const t = v && v.kind === 'restaurant' ? slotTable(v) : tablesFor(s.venueId).find((x) => x.id === s.selTable);
   if (!t || !v) return null;
   const m = bookingMath(t);
   const notReady = v.payoutStatus !== 'active';
   const pay = () => {
-    const mySubtotal = Math.round(m.groupTotal / m.splitCount);
+    const mySubtotal = t.feeFree ? m.myShare : Math.round(m.groupTotal / m.splitCount);
     const feeOverride = m.myShare - mySubtotal;
     startPaystackPayment('booking_host', v.id, mySubtotal, feeOverride, {
-      venueName: v.name, tableId: t.id, tier: t.tier, men: s.men, women: s.women, min: t.min,
+      ...(t.slot ? { slotDate: s.selSlot.date, slotTime: s.selSlot.time, party: t.party } : {}),
+      venueName: v.name, tableId: t.id, tier: t.tier, men: t.slot ? t.party : s.men, women: t.slot ? 0 : s.women, min: t.min,
       myShare: m.myShare, splitPay: s.splitPay, invited: s.splitPay ? s.invited.slice() : [],
       promo: s.promoterCode, who: people.me.name || 'You', payments: splitPaymentsFor(t),
     });
@@ -752,8 +829,8 @@ export function PayScreen() {
       </div>
       <div className="body enter"><div className="pad" style={{ paddingBottom: 130, maxWidth: 680 }}>
         <div className="summary">
-          <div className="li"><span>Minimum spend subtotal</span><b>{fmt(m.groupTotal)}</b></div>
-          <div className="li"><span>Seat&apos;d service charge (5%)</span><b>{fmt(m.fee)}</b></div>
+          <div className="li"><span>{t.slot ? 'Booking deposit' : 'Minimum spend subtotal'}</span><b>{fmt(m.groupTotal)}</b></div>
+          {!t.feeFree && <div className="li"><span>Seat&apos;d service charge (5%)</span><b>{fmt(m.fee)}</b></div>}
           <div className="li"><span>Group total</span><b>{fmt(m.chargeTotal)}</b></div>
           <div className="li"><span>Split between</span><b>{m.splitCount} {m.splitCount === 1 ? 'person' : 'people'}</b></div>
           <div className="total"><span className="sub">You pay now</span><span className="amt">{fmt(m.myShare)}</span></div>
@@ -777,7 +854,7 @@ export function JoinPayScreen() {
   const notReady = !v || v.payoutStatus !== 'active';
   const gender = aj.gender === 'female' ? 'female' : 'male';
   const subtotal = publicJoinPrice(pt, gender);
-  const fee = serviceFee(subtotal);
+  const fee = guestFee(v, subtotal);
   const total = subtotal + fee;
   return (
     <>
@@ -798,7 +875,7 @@ export function JoinPayScreen() {
         </div>
         <div className="summary">
           <div className="li"><span>Join price</span><b>{fmt(subtotal)}</b></div>
-          <div className="li"><span>Seat&apos;d service charge (5%)</span><b>{fmt(fee)}</b></div>
+          {fee > 0 && <div className="li"><span>Seat&apos;d service charge (5%)</span><b>{fmt(fee)}</b></div>}
           <div className="total"><span className="sub">You pay now</span><span className="amt">{fmt(total)}</span></div>
         </div>
         <div className="micro" style={{ marginTop: 18 }}>
@@ -821,7 +898,7 @@ export function TicketPayScreen() {
   if (!v || !t) return null;
   const qty = Math.max(1, s.ticketQty || 1);
   const subtotal = t.price * qty;
-  const fee = serviceFee(subtotal);
+  const fee = guestFee(v, subtotal);
   const total = subtotal + fee;
   const notReady = v.payoutStatus !== 'active';
   return (
@@ -922,7 +999,7 @@ export function StatusScreen() {
           <div className="head">
             <div className="row">
               <div className="covtag nm" style={{ fontSize: 22, position: 'static', maxWidth: 'none' }}>{r.venue}</div>
-              <span className="pill" style={{ background: tierMeta[r.tier].color, color: '#0B0710' }}>{tierMeta[r.tier].label}</span>
+              <span className="pill" style={{ background: tierMeta[r.tier].color, color: '#0B0710' }}>{r.slotTime ? 'Reservation' : tierMeta[r.tier].label}</span>
             </div>
             <div className="sub" style={{ fontSize: 13, marginTop: 4 }}>{r.date} · entry until 01:00</div>
           </div>
@@ -1015,7 +1092,7 @@ export function MyBookings() {
                 <div className="row">
                   <div>
                     <div className="nm" style={{ fontSize: 17, fontWeight: 800 }}>{r.venue} — {r.table}</div>
-                    <div className="meta2">{tierMeta[r.tier].label} · {r.men + r.women} guests · {r.date || ''}</div>
+                    <div className="meta2">{r.slotTime ? 'Reservation' : tierMeta[r.tier].label} · {r.men + r.women} guests · {r.date || ''}</div>
                   </div>
                   <StatusChip st={r.status} />
                 </div>
