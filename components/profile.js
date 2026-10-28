@@ -1,7 +1,8 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
 import { todayStr } from '@/lib/data';
-import { useApp, mutate, people, toast, authSignOut, saveProfileToDb, readAllNotifs, uploadAvatar } from '@/lib/store';
+import { useApp, mutate, people, toast, authSignOut, saveProfileToDb, readAllNotifs, uploadAvatar, isPastItem } from '@/lib/store';
+import { fmt, slotDay } from '@/lib/data';
 import { Icon, Av, Empty, LogoMark, OfflineBar } from './ui';
 import { UserTabbar } from './user';
 
@@ -67,6 +68,9 @@ export function ProfileScreen() {
           <div className="setrow" style={{ cursor: 'pointer' }} onClick={() => mutate((x) => { x.tab = 'bookings'; x.screen = 'home'; })}>
             <div className="nm" style={{ fontSize: 15 }}>My bookings</div><span style={{ color: 'var(--muted)' }}><Icon name="arrow" size={20} stroke={2.5} /></span>
           </div>
+          <div className="setrow" style={{ cursor: 'pointer' }} onClick={() => mutate((x) => { x.screen = 'previous'; })}>
+            <div className="nm" style={{ fontSize: 15 }}>Previous bookings</div><span style={{ color: 'var(--muted)' }}><Icon name="arrow" size={20} stroke={2.5} /></span>
+          </div>
           <div className="setrow" style={{ cursor: 'pointer' }} onClick={() => mutate((x) => { x.screen = 'editprofile'; })}>
             <div className="nm" style={{ fontSize: 15 }}>Edit profile</div><span style={{ color: 'var(--muted)' }}><Icon name="arrow" size={20} stroke={2.5} /></span>
           </div>
@@ -131,6 +135,46 @@ export function EditProfile() {
           toast('Profile saved');
         }}>Save changes</button>
       </div></div>
+    </>
+  );
+}
+
+// Bookings and tickets move here 24 hours after the event is over.
+export function PreviousBookings() {
+  const s = useApp();
+  const uid = s.session?.user?.id;
+  const bookings = uid ? s.requests.filter((r) => isPastItem(r) && (r.userId === uid || (r.payments || []).some((p) => p.id === uid))) : [];
+  const tickets = uid ? s.ticketPurchases.filter((p) => isPastItem(p) && p.userId === uid) : [];
+  const items = [
+    ...bookings.map((r) => ({ id: r.id, at: r.slotDate ? Date.parse(r.slotDate) : r.createdAt, title: `${r.venue} — ${r.table}`, sub: `${r.slotTime ? 'Reservation' : 'Table'} · ${(r.party || r.men + r.women)} guests`, total: r.paidNow || r.total, status: r.status, code: r.code, date: r.slotDate ? slotDay(r.slotDate) + ' · ' + r.slotTime : r.date })),
+    ...tickets.map((p) => ({ id: p.id, at: p.createdAt, title: `${p.venue} — ${p.ticketName}`, sub: `${p.qty}× ticket`, total: p.total, status: p.status, code: p.code, date: p.date })),
+  ].sort((a, b) => (b.at || 0) - (a.at || 0));
+  const label = (st) => (st === 'checkedin' ? 'ATTENDED' : st === 'confirmed' ? 'COMPLETED' : String(st || '').toUpperCase());
+  return (
+    <>
+      <OfflineBar />
+      <div className="topbar">
+        <button className="back" aria-label="Back" onClick={() => mutate((x) => { x.screen = 'home'; x.tab = 'profile'; })}><Icon name="back" size={22} stroke={2.8} /></button>
+        <div className="h2" style={{ fontSize: 20 }}>Previous bookings</div>
+      </div>
+      <div className="body enter"><div className="pad">
+        {items.length ? items.map((it) => (
+          <div className="req" key={it.id}>
+            <div className="row">
+              <div>
+                <div className="nm" style={{ fontSize: 17, fontWeight: 800 }}>{it.title}</div>
+                <div className="meta2">{it.sub} · {it.date || ''}</div>
+              </div>
+              <span className="badge" style={{ background: 'rgba(255,255,255,.08)', color: 'var(--muted)' }}>{label(it.status)}</span>
+            </div>
+            <div className="summary" style={{ marginTop: 12 }}>
+              <div className="li"><span>Reference</span><b>{it.code || it.id}</b></div>
+              <div className="li"><span>Paid</span><b>{fmt(it.total || 0)}</b></div>
+            </div>
+          </div>
+        )) : <Empty>No previous bookings yet.<br />Bookings and tickets show up here 24 hours after the event.</Empty>}
+      </div></div>
+      <UserTabbar />
     </>
   );
 }

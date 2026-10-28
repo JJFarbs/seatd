@@ -9,7 +9,7 @@ import {
   bookingLink, qrPayload, toggleFav, submitReview, addFriendFromDraft, sendBookingInvite,
   makePublic, savePublicPrice, requestJoinPublic, decideJoin,
   markPaid, nativeShare, copyText, addFriend, searchProfiles,
-  ticketsFor, ticketQrPayload, startPaystackPayment, venueSlots, slotCoversLeft, depositFor, slotTable } from '@/lib/store';
+  ticketsFor, ticketQrPayload, startPaystackPayment, isPastItem, venueSlots, slotCoversLeft, depositFor, slotTable } from '@/lib/store';
 import {
   Icon, Pin, CheckBig, LogoMark, Av, StatusChip, Empty, OfflineBar, Cover, Gallery,
   FavBtn, Stars, StarRating, ReviewRows, Availability, Deadline, Thumb,
@@ -1034,13 +1034,13 @@ export function MyBookings() {
   const uid = s.session?.user?.id;
   // your own bookings, plus bookings you're invited to split
   const mine = s.requests.filter((r) =>
-    uid ? (r.userId === uid || (r.payments || []).some((p) => p.id === uid))
-      : !s.dbReady && (r.who === 'You' || (r.payments || []).some((p) => p.id === 'host' && p.name === people.me.name)));
+    !isPastItem(r) && (uid ? (r.userId === uid || (r.payments || []).some((p) => p.id === uid))
+      : !s.dbReady && (r.who === 'You' || (r.payments || []).some((p) => p.id === 'host' && p.name === people.me.name))));
   // tables you've paid to join
   const myJoins = uid
     ? s.publicTables.flatMap((pt) => (pt.joinRequests || []).filter((j) => j.userId === uid && j.status !== 'denied').map((j) => ({ pt, j })))
     : [];
-  const myTickets = uid ? s.ticketPurchases.filter((p) => p.userId === uid && p.status !== 'refunded') : [];
+  const myTickets = uid ? s.ticketPurchases.filter((p) => p.userId === uid && p.status !== 'refunded' && !isPastItem(p)) : [];
   return (
     <>
       <OfflineBar />
