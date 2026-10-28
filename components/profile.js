@@ -325,26 +325,26 @@ export function LegalScreen() {
             <p>We use industry-standard measures, including row-level access controls on our database, to restrict who can read or change your data. No system is 100% secure, and we encourage you to use a strong, unique password.</p>
 
             <h3>11. Your rights</h3>
-            <p>Under POPIA you have the right to: know what personal information we hold about you; request a copy of it; correct inaccurate information; request deletion of your information; and object to certain processing. To exercise any of these rights, email <a href="mailto:privacy@seatedbookings.com" style={{ color: 'var(--blue)' }}>privacy@seatedbookings.com</a>. You can also delete favourites, friends, messages and your profile photo directly within the app at any time.</p>
+            <p>Under POPIA you have the right to: know what personal information we hold about you; request a copy of it; correct inaccurate information; request deletion of your information; and object to certain processing. To exercise any of these rights, email <a href="mailto:support@seatedbookings.com" style={{ color: 'var(--blue)' }}>support@seatedbookings.com</a>. You can also delete favourites, friends, messages and your profile photo directly within the app at any time.</p>
 
             <h3>12. Children</h3>
             <p>Seat&apos;d is intended for users aged 18 and over and is not directed at children. We do not knowingly collect personal information from anyone under 18.</p>
 
             <h3>13. Complaints</h3>
-            <p>If you believe we have not handled your personal information properly, you can contact us first at <a href="mailto:privacy@seatedbookings.com" style={{ color: 'var(--blue)' }}>privacy@seatedbookings.com</a>, or lodge a complaint with South Africa&apos;s Information Regulator (inforeg.org.za).</p>
+            <p>If you believe we have not handled your personal information properly, you can contact us first at <a href="mailto:support@seatedbookings.com" style={{ color: 'var(--blue)' }}>support@seatedbookings.com</a>, or lodge a complaint with South Africa&apos;s Information Regulator (inforeg.org.za).</p>
 
             <h3>14. Changes to this policy</h3>
             <p>We may update this Privacy Policy as the Service evolves. Material changes will be reflected by updating the effective date above.</p>
 
             <h3>15. Contact</h3>
-            <p>Privacy questions or requests: <a href="mailto:privacy@seatedbookings.com" style={{ color: 'var(--blue)' }}>privacy@seatedbookings.com</a>.</p>
+            <p>Privacy questions or requests: <a href="mailto:support@seatedbookings.com" style={{ color: 'var(--blue)' }}>support@seatedbookings.com</a>.</p>
           </>
         )}
         {page === 'contact' && (
           <>
             <h3>Talk to us</h3>
             <p>Support: <a href="mailto:support@seatedbookings.com" style={{ color: 'var(--blue)' }}>support@seatedbookings.com</a></p>
-            <p>Venues &amp; partnerships: <a href="mailto:venues@seatedbookings.com" style={{ color: 'var(--blue)' }}>venues@seatedbookings.com</a></p>
+            <p>Venues &amp; partnerships: <a href="mailto:support@seatedbookings.com" style={{ color: 'var(--blue)' }}>support@seatedbookings.com</a></p>
             <p>WhatsApp line: +27 10 555 0123 (Thu–Sun 18:00–04:00)</p>
             <p>Johannesburg HQ: 24 Central, Gwen Lane, Sandton.</p>
           </>
